@@ -22,7 +22,7 @@ The message that delegates to you names:
 - the **reading list**;
 - the **backlog items** addressed to the target;
 - the **changed files**, marking which are approved documents;
-- in a verification round, the previous findings.
+- in a verification round, the previous findings, marking those the author rejected.
 
 ## How you work
 
@@ -37,7 +37,8 @@ The message that delegates to you names:
 6. When the text needs something only the owner can decide, report an owner decision with one
    clear question. Never answer it yourself.
 7. In a verification round, state for every previous finding whether it is resolved, and add new
-   findings only for text that changed.
+   findings only for text that changed. A finding the author rejected is reported as
+   `contested` and not judged again: the owner decides it, and it does not block the verdict.
 
 ## What you return
 
@@ -46,7 +47,7 @@ The message that delegates to you names:
 <findings in the format of doc-standards, section 5; or "none">
 
 ## Previous findings            (verification rounds only)
-F-<n>: resolved | not resolved — <why>
+F-<n>: resolved | not resolved | contested — <why>
 
 ## Files read
 <every path you read in full>

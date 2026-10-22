@@ -34,7 +34,12 @@ The message that delegates to you names:
 5. Never change a version line, a History table, or a status in `docs/README.md`.
 6. When the text needs a decision that neither the documents, the backlog nor the owner's
    answers contain, do not make it up (rule W12). Write everything else, and list the question.
-7. Before returning, check your text against every writing rule in `doc-standards`, section 3.
+7. In a revision round, fix every finding you agree with. If you are convinced a finding is
+   wrong — it misreads the text, contradicts an approved document, a backlog item or an owner
+   answer, or its fix would break another writing rule — leave that text unchanged and list the
+   finding under "Findings rejected", with the reason. Never reject a finding because its fix is
+   laborious.
+8. Before returning, check your text against every writing rule in `doc-standards`, section 3.
 
 ## What you return
 
@@ -52,6 +57,9 @@ Exactly these sections, in English:
 
 ## Questions for the owner
 <numbered; each answerable in a sentence; with the options when there are any; or "none">
+
+## Findings rejected
+<F-<n> — <reason, citing the document section, backlog item or writing rule>; or "none">
 
 ## Notes for the reviewer
 <anything you are unsure about; or "none">

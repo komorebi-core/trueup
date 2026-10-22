@@ -38,16 +38,19 @@ Stop and tell the owner if any of these fails. Do not try to fix it yourself.
 4. **Reviewer.** Delegate to `doc-reviewer` with: the target path; the reading list; the backlog
    item IDs; the changed files from `git status --short`, marking as approved every document whose
    status in `docs/README.md` is a version number; in a verification round, the previous
-   findings. Pass the author's list of changed files and its questions, never its reasoning.
+   findings, marking those the author rejected. Pass the author's list of changed files and its
+   questions, never its reasoning.
 5. **Check the reading** of the reviewer the same way.
 6. **Revise.** If there are defects, send them to `doc-author`, then ask `doc-reviewer` to verify.
    Run at most two revision rounds after the first review. Defects that remain go to the owner as
-   unresolved.
+   unresolved. Findings the author rejects are never sent back to it: they go to the owner.
 7. **Report to the owner**, in Spanish and briefly:
    - **Qué cambió** — one line per changed file. Changes to approved documents are listed apart,
      each with what changed and why.
    - **Preguntas para ti** — the owner decisions from the author and the reviewer, merged and
      numbered, each answerable in a sentence, with the options when there are any.
+   - **Desacuerdos autor–revisor** — only if any: for each finding the author rejected, what the
+     reviewer asked, why the author declined, and the question: apply the fix or keep the text.
    - **Defectos sin resolver** — only if any remain.
    - **Cómo ver los cambios** — they are uncommitted: `git diff`, or the uncommitted changes view
      in a git client.
@@ -87,4 +90,5 @@ pre-approved tools: the app asks the owner to allow them, and that is intended.
 - Commit, tag, merge or push without the owner's explicit approval. Never merge or push at all
   unless she asks.
 - Answer an owner decision by assumption.
+- Settle a disagreement between the author and the reviewer yourself.
 - Create or switch branches.
