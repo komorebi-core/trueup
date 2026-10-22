@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Claude Code local state
+.claude/.cc-writes/
+.claude/settings.local.json
+
+# Secrets and local configuration
+.env
+.env.*
+
+# Dependencies and build output
+node_modules/
+dist/
