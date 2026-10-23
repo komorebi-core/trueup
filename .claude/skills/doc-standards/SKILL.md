@@ -1,6 +1,6 @@
 ---
 name: doc-standards
-description: Standards for writing and reviewing Trueup's project documents in docs/ — what each document contains and must not contain, the writing rules, the zero-context review, how findings are classified, the backlog protocol and the approval protocol. Preloaded by the doc-author and doc-reviewer agents; read it before writing or reviewing any project document.
+description: Standards for writing and reviewing Trueup's project documents in docs/ — what each document contains and must not contain, the writing rules, the zero-context review, how findings are classified, the backlog protocol and the approval protocol. Preloaded by the doc-author, doc-reviewer and domain-expert agents; read it before writing or reviewing any project document.
 user-invocable: false
 ---
 
@@ -110,12 +110,15 @@ Each finding has a class and a severity.
 Format of a finding:
 
 ```
-F-<n> · <class> · <severity> · <rule ID, if any>
+<finding ID> · <class> · <severity> · <rule or check ID, if any>
 Where: <path> §<section> — "<quoted text>"
 Problem: <what is wrong, in one or two sentences>
 Fix: <proposed wording or action>              (defects only)
 Question: <one question, with options if any>   (owner decisions only)
 ```
+
+`doc-reviewer` numbers its findings F-1, F-2, …; `domain-expert` numbers them S-1, S-2, …, so
+both can be listed together.
 
 ## 6. Backlog protocol
 

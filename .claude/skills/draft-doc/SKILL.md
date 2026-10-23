@@ -1,6 +1,6 @@
 ---
 name: draft-doc
-description: Runs the author–reviewer cycle on one of Trueup's project documents and reports to the owner, or records the owner's approval. Use as /draft-doc <document> [notes], or /draft-doc approve <document> [<document> ...].
+description: Runs the write-and-review cycle on one of Trueup's project documents and reports to the owner, or records the owner's approval. Use as /draft-doc <document> [notes], or /draft-doc approve <document> [<document> ...].
 disable-model-invocation: true
 argument-hint: "<document> [notes] | approve <document> [<document> ...]"
 allowed-tools: Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git branch *) Bash(git rev-parse *)
@@ -9,8 +9,10 @@ allowed-tools: Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git bran
 # /draft-doc
 
 You coordinate the work on Trueup's project documents. You never write a document yourself: the
-`doc-author` agent writes and the `doc-reviewer` agent reviews. You talk to the owner in Spanish;
-everything you send to the agents, and everything written in the repository, is in English.
+`doc-author` agent writes; the `doc-reviewer` agent reviews how the text is written, and the
+`domain-expert` agent reviews whether its financial substance holds up. You talk to the owner in
+Spanish; everything you send to the agents, and everything written in the repository, is in
+English.
 
 Arguments: `$ARGUMENTS`
 
@@ -35,22 +37,26 @@ Stop and tell the owner if any of these fails. Do not try to fix it yourself.
    in a revision round, the findings to fix.
 3. **Check the reading.** If the author's "Files read" is missing any required path, delegate
    again, naming the missing paths.
-4. **Reviewer.** Delegate to `doc-reviewer` with: the target path; the reading list; the backlog
-   item IDs; the changed files from `git status --short`, marking as approved every document whose
-   status in `docs/README.md` is a version number; in a verification round, the previous
-   findings, marking those the author rejected. Pass the author's list of changed files and its
-   questions, never its reasoning.
-5. **Check the reading** of the reviewer the same way.
-6. **Revise.** If there are defects, send them to `doc-author`, then ask `doc-reviewer` to verify.
-   Run at most two revision rounds after the first review. Defects that remain go to the owner as
-   unresolved. Findings the author rejects are never sent back to it: they go to the owner.
+4. **Reviewers.** Delegate to `doc-reviewer` and `domain-expert` in the same message, and wait
+   for both results before going on. Send each one: the target path; the reading list; the
+   backlog item IDs; the changed files from `git status --short`, marking as approved every
+   document whose status in `docs/README.md` is a version number; in a verification round, its
+   own previous findings, marking those the author rejected. Pass the author's list of changed
+   files and its questions, never its reasoning.
+5. **Check the reading** of each reviewer the same way.
+6. **Revise.** If either reviewer reports defects, send all of them to `doc-author` in one list,
+   then ask both reviewers to verify. Run at most two revision rounds after the first review, and
+   stop earlier when both verdicts are "ready for the owner". Defects that remain go to the owner
+   as unresolved. Findings the author rejects are never sent back to it: they go to the owner.
 7. **Report to the owner**, in Spanish and briefly:
    - **Qué cambió** — one line per changed file. Changes to approved documents are listed apart,
      each with what changed and why.
-   - **Preguntas para ti** — the owner decisions from the author and the reviewer, merged and
-     numbered, each answerable in a sentence, with the options when there are any.
-   - **Desacuerdos autor–revisor** — only if any: for each finding the author rejected, what the
-     reviewer asked, why the author declined, and the question: apply the fix or keep the text.
+   - **Preguntas para ti** — the owner decisions from the author and both reviewers, merged (one
+     question when several ask the same) and numbered, each answerable in a sentence, with the
+     options when there are any.
+   - **Desacuerdos con los revisores** — only if any: for each finding the author rejected, which
+     reviewer raised it and what it asked, why the author declined, and the question: apply the
+     fix or keep the text.
    - **Defectos sin resolver** — only if any remain.
    - **Cómo ver los cambios** — they are uncommitted: `git diff`, or the uncommitted changes view
      in a git client.
@@ -90,5 +96,5 @@ pre-approved tools: the app asks the owner to allow them, and that is intended.
 - Commit, tag, merge or push without the owner's explicit approval. Never merge or push at all
   unless she asks.
 - Answer an owner decision by assumption.
-- Settle a disagreement between the author and the reviewer yourself.
+- Settle a disagreement between the author and a reviewer yourself.
 - Create or switch branches.
