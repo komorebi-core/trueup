@@ -1,6 +1,6 @@
 # Trueup — Product
 
-> **Version:** 1.1 · 2026-10-06 · approved by the owner
+> **Version:** 1.2 · 2026-10-23 · approved by the owner
 >
 > **Answers:** why Trueup exists, for whom, what success means, which capabilities it has and in
 > what priority.
@@ -17,9 +17,10 @@
 Trueup is a personal finance application with a single user: its owner. It records her
 transactions — read automatically from the bank notifications that an existing email extractor
 collects, and entered by hand when no notification exists — and helps her control her spending
-against monthly budgets. At month-end each account is checked against its institution; when a
-balance does not match, the institution's statement is compared line by line with the record to
-find what is missing or wrong.
+against monthly budgets. At the end of each month, or of a credit card's billing cycle, each
+account whose balance can be verified — against its institution's balance, or by counting cash —
+is checked; when a balance does not match, the institution's statement is compared line by line
+with the record to find what is missing or wrong.
 
 The result is one reconciled, trustworthy record of her money that tells her what needs her
 attention.
@@ -33,7 +34,7 @@ actually is.
 An email extractor that already exists, and is independent of Trueup, reads those emails every
 day and writes each one, verbatim and without interpretation, as a row in a spreadsheet: the
 **staging sheet**. Trueup reads the staging sheet. What no email reports is entered by hand or
-found during month-end reconciliation.
+found during reconciliation.
 
 Keeping a true picture of her money is hard for reasons that will not go away:
 
@@ -91,7 +92,7 @@ How we know Trueup works. Each one is observable by the owner or computable by T
 |---|---|---|
 | **O1** | Weekly upkeep — reviewing, confirming, reconciling | ≤ 15 minutes in a normal week |
 | **O2** | A decision is never needed twice: a resolved item never returns for review, and an answer turned into a rule applies to every later match | 0 re-asked items |
-| **O3** | Every active account is reconciled each month against its institution | 100% of active accounts; difference zero, or explained by an explicit adjustment |
+| **O3** | Every active account within the scope of `reconciliation` (7.1) is reconciled at the end of each period, from its first full period | 100% of those accounts; difference zero, or explained by an explicit adjustment |
 | **O4** | No interest or late fees caused by a missed due date or an unknown amount due | 0 per year |
 | **O5** | No budget overrun goes unnoticed: a category that exceeds its budget, or is on pace to, is flagged before month-end | Every overrun flagged before month-end |
 | **O6** | No reimbursement is forgotten: every amount owed to her stays visible until it is settled or written off | 0 amounts owed that are not visible |
@@ -114,8 +115,8 @@ lower number wins.
    totals only once confirmed — by her directly, or by a rule she set to apply automatically. A
    rule set to *confirm* only pre-fills the item; it still waits for her.
 3. **Capture is literal, judgment is explicit, figures are derived.** What arrives is kept
-   exactly as received. Interpreting it is a separate, visible and reversible step. Every
-   balance, total and indicator is computed, never entered. A capture error can produce a wrong
+   exactly as received, except records discarded under `capture` (7.1). Interpreting it is a
+   separate, visible and reversible step. Every balance, total and indicator is computed, never entered. A capture error can produce a wrong
    item for review, never a silently wrong figure.
 4. **Honest numbers.** Every figure shows when it rests on an incomplete period, an unreconciled
    account, or an account whose capture is incomplete. This applies to budgets too: a category
@@ -133,22 +134,23 @@ Each capability's detailed behaviour has exactly one home: `openspec/specs/<capa
 names below are those folder names.
 
 The MVP is everything needed for Trueup to replace the owner's spreadsheet as the system of
-record, plus the reconciliation the spreadsheet never had. Recording starts at a cut-off date,
-from opening balances taken from the institutions; transactions recorded before that date stay
-in the spreadsheet and are not imported.
+record, plus the reconciliation the spreadsheet never had. Each account's record starts on the
+date the account is created in Trueup; an account whose balance is tracked starts from an
+opening balance taken from its institution, or set by the owner when it has none; transactions
+before that date stay in the spreadsheet and are not imported.
 
 ### 7.1 MVP
 
 | Capability | Covers | Jobs |
 |---|---|---|
 | `access` | Signing in. Only the owner can reach any data | all |
-| `financial-structure` | Institutions. Accounts of every kind in 7.2, each with its currency or currencies, an opening balance at a cut-off date, and how its transactions are captured. Instruments, such as cards, and every identifier under which an account or instrument appears. Categories and their classification. Counterparties. The owner's settings. A one-time import of the configuration she already keeps: categories, rules and identifiers | J7 |
+| `financial-structure` | Institutions. Accounts of every kind in 7.2, each with its currency or currencies and how its transactions are captured; each account whose balance is tracked also has an opening balance on the date it is created. Instruments, such as cards, and every identifier under which an account or instrument appears. Categories and their classification. Counterparties. The owner's settings. A one-time import of the configuration she already keeps: categories, rules and identifiers | J7 |
 | `transactions` | Recording transactions in the currency they were executed in. A transaction affects one account (income, expense) or moves money between two accounts (transfer, card payment, withdrawal, top-up) as a single transaction, including between currencies. Splitting one transaction across several categories or shares. Ownership decided per transaction when a third-party account is involved. Derived balances and net worth | J3 |
-| `capture` | Bringing transactions in through capture channels: the staging sheet and manual entry. No duplicates. Proof that a read lost nothing. Every captured record kept as received, alongside the transaction derived from it | J3 |
+| `capture` | Bringing transactions in through capture channels: the staging sheet and manual entry. No duplicates. Proof that a read lost nothing. Every captured record kept as received, alongside the transaction derived from it. A record dated before the creation of an account it concerns, or before the first account when it concerns none, is discarded; only its key is kept, so later reads skip it (`docs/domain.md`, 5.9) | J3 |
 | `classification` | Rules the owner manages that assign account, category, counterparty and description. Each rule either applies automatically or pre-fills the item and waits for confirmation | J3 |
 | `review` | Every transaction captured since her last review, listed in two parts. First, what waits for her decision, grouped by reason and ordered by financial impact: no matching rule or a rule that requires confirmation, an unknown identifier, data the capture could not read, an ownership question, a transaction found missing during reconciliation, an incoming payment that may settle an amount owed to her. Then, what was recorded automatically, with transactions on accounts she marks for attention highlighted and changeable in one action. Resolving an item and turning the answer into a rule in one action | J2, J3 |
 | `recurring` | Expected transactions, such as salary and fixed payments: expecting them, flagging when one has not arrived, recording it on confirmation | J2, J3 |
-| `reconciliation` | At month-end, per account: comparing the recorded balance with the institution's. If it matches, the account is marked reconciled. If not, the owner uploads the statement and Trueup compares it line by line with the record, listing what is missing from the record, what is in the record but not in the statement, and amounts that differ. What is missing goes to review. Any remaining difference is closed by an explicit, visible adjustment | J1, J2, J3 |
+| `reconciliation` | Per account whose balance is tracked, except money lent, shared expenses, property and the owner's own funds held in a third-party account, at the end of each period — a calendar month, or a credit card's billing cycle — from the first full period after the account is created: comparing the recorded balance with the institution's. If it matches, the account is marked reconciled. If not, the owner uploads the statement and Trueup compares it line by line with the record, listing what is missing from the record, what is in the record but not in the statement, and amounts that differ. What is missing goes to review. Any remaining difference is closed by an explicit, visible adjustment | J1, J2, J3 |
 | `card-cycles` | Statement closing and due dates; statement balance per currency; minimum and full payment, including instalments due in the cycle; advance warning before each due date | J2, J5 |
 | `debt` | Loans and mortgage: outstanding principal, rate, instalment schedule and its revisions; each payment divided into principal, interest, insurance and fees; extra principal payments. Card instalment plans: each instalment is added to the card's amount due until the plan is paid off. Every plan that finances a purchase states when that spending is recognised: in full when the plan starts, or as each instalment is paid | J2, J5 |
 | `receivables` | Money owed to the owner. A shared expense is split into her own share, which is her spending, and the shares owed by named people. Money she lends. Settling an amount owed, fully or partially, with the payment that repays it — a repayment is never income. Writing off what will not be repaid | J5, J6 |
@@ -178,13 +180,12 @@ Instruments in scope: debit card · credit card.
 
 | Question | Indicators |
 |---|---|
-| Am I on track this month? | Net cash flow (transfers excluded) · savings rate · fixed costs ÷ income · debt service ÷ income · months of essential spending covered by liquid assets · credit utilisation |
+| Am I on track this month? | Net cash flow (transfers excluded) · savings rate · fixed costs ÷ income · debt service ÷ income · months of essential spending covered by liquid assets · credit utilisation per card |
 | Am I within budget? | Spending against budget per category · pace through the month · categories over, or on pace to be over, budget |
 | What do I need to do? | Due dates in the next 30 days · items pending review · unreconciled accounts · expected transactions that have not arrived |
 | What do I owe, and what am I owed? | Outstanding debt by loan, mortgage and instalment plan · instalments coming due · amounts owed to her, by person |
 | Where does the money go? | Spending by category group, opening into categories · comparison with the 3-month average · top counterparties · month-to-date spending against the previous month, day by day |
 | How am I evolving? | Net worth by month · debt by type · income against expenses by month |
-| What does money cost me? | Interest and fees by month and year · credit utilisation per card · subscriptions in the reporting currency |
 | Can I trust these numbers? | Capture coverage per account · date of last reconciliation · open differences |
 
 Averages can exclude categories she selects and transactions she marks as extraordinary.
@@ -225,3 +226,4 @@ appears during construction is added here before any change is proposed for it.
 |---|---|---|
 | 2026-09-30 | 1.0 | First approved version |
 | 2026-10-06 | 1.1 | Defining the domain refined the scope. Property added as a kind of account, valued by hand, so mortgage debt has its asset. Each financing plan states when its spending is recognised. The spreadsheet's configuration is imported, its transactions are not: recording starts at a cut-off date. Indicator targets moved to Later. Review lists every new transaction, not only those that need a decision |
+| 2026-10-23 | 1.2 | Defining the domain refined the scope again. Each account starts on the date it is created, from an opening balance, instead of a single cut-off date. Reconciliation is per period (a calendar month, or a card's billing cycle) and covers only accounts whose balance can be verified. A captured record dated before its account existed is discarded and only its key kept. The 'What does money cost me?' dashboard question is removed, and credit utilisation is shown per card |

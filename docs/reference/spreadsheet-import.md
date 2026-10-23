@@ -5,8 +5,8 @@
 
 Before Trueup, the owner kept her finances in a spreadsheet. Trueup imports its
 **configuration** once — categories, classification rules, identifiers and the accounts they
-refer to. It never imports the spreadsheet's transactions; recording in Trueup starts at the
-start date (`docs/product.md`, 7). Whether accounts are part of the import is pending the owner's
+refer to. It never imports the spreadsheet's transactions; each account's record in Trueup starts
+on the date the account is created (`docs/product.md`, 7). Whether accounts are part of the import is pending the owner's
 confirmation (`docs/backlog.md`, B-7).
 
 The import is a **proposal**: the owner reviews and confirms it before anything in it becomes
@@ -103,7 +103,7 @@ spaces and separators removed.
 | Two rows that are the same card in two currencies, named alike with a currency suffix | One credit-card account holding both currencies. The pairing is confirmed by the owner |
 | Liquid? | Liquid attribute, confirmed by the owner |
 | Credit Limit, when greater than zero | Credit limit |
-| Start Value | Not imported. Opening balances are entered at the start date from real statements |
+| Start Value | Not imported. Each account's opening balance is entered when the account is created (`docs/domain.md`, 4.2) |
 
 Currencies are written in the spreadsheet as symbols. Each symbol is mapped to a workspace
 currency by the owner at import time.

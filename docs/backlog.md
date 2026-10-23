@@ -6,47 +6,12 @@ the same change.
 
 An item marked **Open** needs the owner's answer. It is never resolved by assumption.
 
-## For `domain.md`
-
-- **B-1** — State the rule on amounts positively: amounts are exact decimals — for example,
-  109.83 — kept with exactly their currency's number of decimal places; binary floating-point
-  types are never used for money. Align `MON-1`.
-- **B-2** — Redefine the reference rate. It is the rate implied by the owner's most recent
-  transaction that mixes the two currencies, on or before the date. Before any such transaction
-  exists, the owner enters one rate at the start date. There is no external rate source and no
-  daily rate record. Every converted figure states the rate it used and that rate's date. The
-  difference between a rate used to estimate a figure and the rate of a later payment is not
-  recorded as a cost. Update the glossary, section 3 and `MON-3`, and remove the mention of a
-  rate source in `docs/architecture.md`.
-- **B-3** — Rates are stored; conversions are not. The rate of a transaction that mixes
-  currencies is recorded with that transaction, implied by its two stored amounts. Converted
-  amounts are never stored: they are computed when a figure that combines currencies is shown —
-  budgets, dashboard totals, net worth, credit utilisation. A transaction is always shown in its
-  own currency. Align `MON-2`.
-- **B-4** — Add an example: a charge in a foreign currency on a multi-currency credit card, then
-  that balance paid from an account in another currency, with the rate taken from the payment
-  (illustrative: a charge of USD 20.00; a payment debiting EUR 18.40 and applying USD 20.00;
-  rate 0.92). If the payment's notification gives only the amount debited and not the amount
-  applied in the card's currency, the missing amount is a review item, or comes from the
-  statement.
-- **B-5** — Rename *cut-off date* to *start date* everywhere: glossary, account attributes,
-  adjustments and examples. In credit-card English, "cut-off date" also names a card's statement
-  date, so the current term is ambiguous.
-- **B-6** — List a credit card's own attributes explicitly in 4.2–4.3 and 5.7: credit limit (one,
-  in one currency, shared by all the card's currencies); **statement date** (the day of the month
-  the cycle closes); **payment due date rule** (a fixed day of the following month, or a number
-  of days after the statement date). Each cycle's actual dates are computed from these and
-  replaced by the statement's when one is uploaded. Use "statement date" and "payment due date"
-  consistently instead of "closing day" and "closing date".
-
 ## For `product.md`
 
 - **B-7** — **Open.** The one-time configuration import resolves identifier mappings to
   accounts, so it must also create those accounts, each with its kind and currencies confirmed
   by the owner. `product.md` currently lists categories, rules and identifiers only. Confirm
   whether accounts are part of the import.
-- **B-29** — Rename *cut-off date* to *start date* (see B-5): in 7, the definition of the MVP, and
-  in the `financial-structure` row.
 
 ## For `quality-attributes.md`
 
@@ -65,8 +30,9 @@ An item marked **Open** needs the owner's answer. It is never resolved by assump
   pie or donut chart: with many categories, a pie does not allow comparison.
 - **B-14** — Month-to-date cumulative spending against the previous month, day by day, is the
   main view of the month's pace.
-- **B-15** — A converted figure states the rate and its date. A transaction is always shown in
-  its own currency, optionally with an approximate converted amount beside it.
+- **B-15** — A converted amount states each reference rate it used, with its date or the mark
+  that the owner entered it. A transaction is always shown in its own currency, optionally with
+  an approximate converted amount beside it.
 - **B-16** — Review lists every transaction captured since the last review: first the items that
   need a decision, then those recorded automatically, with transactions on accounts marked for
   attention highlighted and changeable in one action.
@@ -97,13 +63,22 @@ An item marked **Open** needs the owner's answer. It is never resolved by assump
 
 - **B-23** — AI suggestions stay in Later. Whether to build them is decided after measuring how
   many captured transactions still need review once rules are in use.
-- **B-24** — Owner prerequisites before first use: an opening balance for every account at the
-  start date, taken from real statements; a property recorded at the mortgage's outstanding
-  principal at the start date.
+- **B-24** — Owner prerequisites before first use: an opening balance for every account whose
+  balance is tracked, as of the date the account is created (`docs/domain.md`, 4.2); a property
+  whose opening balance is the mortgage's outstanding principal on the property's creation date.
 - **B-25** — The spreadsheet remains the system of record until Trueup replaces it. There is no
   period without a system.
 - **B-26** — Trueup is deployed from the first increment, so that technical decisions are tested
   in real use from the start.
+
+## For `reference/staging-sheet.md`
+
+- **B-29** — The section "Keys" states that a row dated before the creation date of an account it
+  maps to, or before the creation date of the first account when it maps to none, is never
+  registered: Trueup recognises it by its external key and skips it. It cites `docs/domain.md`,
+  5.9, and `CAP-5` instead of restating the rule, including how a row with no operation date
+  (column J empty) is dated. Recognising these rows never writes to the sheet, which stays
+  read-only (`docs/product.md`, 7.5).
 
 ## For `AGENTS.md` and `openspec/config.yaml` (end of the documentation phase)
 

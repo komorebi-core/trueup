@@ -1,6 +1,6 @@
 # Trueup — Domain
 
-> **Status:** Draft · pending owner approval
+> **Version:** 1.0 · 2026-10-23 · approved by the owner
 >
 > **Answers:** what each concept in Trueup is, how the concepts relate, which rules always hold
 > (invariants), and what is code versus what is data.
@@ -14,7 +14,8 @@
 ## 1. How to read this document
 
 - **Logical, not physical.** Concepts, attributes and relations; no tables, columns or types.
-- **Terms in bold** are defined in section 2 and are used verbatim in specs and code.
+- **Terms in bold** are defined in section 2 or where they first appear in bold, and are used
+  verbatim in specs and code.
 - **Invariants** have an ID (`TX-1`) and are listed in section 6. Specs and tests cite them by ID.
 - **Kinds are code, instances are data.** This document defines kinds of things. Every concrete
   institution, account, category, rule, amount or currency is data the owner manages. Section 7
@@ -29,8 +30,9 @@
 | **Workspace** | The container of everything one owner records. Every record belongs to exactly one |
 | **Owner** | The single person a workspace belongs to |
 | **Currency** | A unit of money, with a code, a symbol and a number of decimal places |
-| **Reporting currency** | The workspace currency into which figures in several currencies are consolidated |
-| **Reference rate** | The exchange rate between two currencies on a date, used only to consolidate figures |
+| **Figure** | A number Trueup computes: a balance, a total or an indicator (5.7, 5.13, 5.14). Any legs it counts are legs of confirmed transactions. A figure is never entered |
+| **Reporting currency** | The currency the owner chooses in her settings. Every converted amount is converted into it (3) |
+| **Reference rate** | The rate of a currency against the reporting currency, used only to convert amounts into the reporting currency. It comes from the owner's own transactions or from a rate she enters, never from an external source (3) |
 | **Institution** | A bank, card issuer, lender or other entity that holds accounts |
 | **Account** | Something with a balance in one or more currencies: a bank account, a credit card, a loan, cash, a receivable, a property |
 | **Instrument** | A means of operating on an account, such as a card. It has no balance of its own |
@@ -41,34 +43,66 @@
 | **Leg** | One side of a transaction: an amount in one currency on one account, category or adjustment |
 | **Adjustment** | A leg target that is neither an account nor a category: opening balance, revaluation, or unexplained difference |
 | **Capture channel** | A way transactions reach Trueup: the staging sheet or manual entry |
-| **Captured record** | What a capture channel delivered, kept exactly as received |
+| **Captured record** | What a capture channel delivered, kept exactly as received. A record discarded under `CAP-5` is not a captured record (5.9) |
 | **Rule** | Owner-managed configuration that resolves part of a captured record: an **identifier mapping** or a **classification rule** |
 | **Review item** | Something waiting for the owner's decision, with its reason |
 | **Plan** | A loan schedule or an instalment plan that spreads a debt over instalments |
 | **Statement** | The institution's account of a period: balances, dates and, when uploaded, lines |
+| **Statement date** | The date on which a statement's period ends. On a credit card, the date on which a cycle closes |
+| **Payment due date** | The date by which a credit card cycle's amount due must be paid |
+| **Cycle** | A credit card's billing period, which ends on a statement date (5.7) |
 | **Reconciliation** | The comparison of an account's recorded balance with the institution's on a date |
 | **Expectation** | A transaction the owner expects on a schedule, such as salary |
 | **Budget** | A monthly spending limit for one expense category |
-| **Cut-off date** | The date from which an account's balance is recorded in Trueup |
+| **Creation date** | The date on which an account is created in Trueup, set automatically. The account's record starts on it (4.2) |
 
 ## 3. Money
 
-**Currencies are data.** The workspace holds the list of currencies it uses. Adding one is a
-configuration change.
+**Currencies are data.** The owner chooses the reporting currency in her settings, before
+creating her first account, and adds the other currencies she transacts in to the workspace's
+list. Adding one is a configuration change. The reporting currency is fixed once the first
+transaction is confirmed (`MON-4`); an opening balance is a transaction, so in practice it is
+fixed when the first account is created.
 
-**Amounts are exact.** An amount is a decimal with exactly the precision of its currency. It is
-never a floating-point number, and it is never stored converted into another currency.
+**Amounts are exact decimals.** An amount is an exact decimal — for example, 109.83 — kept with
+exactly its currency's number of decimal places. Binary floating-point types are never used for
+money (`MON-1`).
+
+**Transaction rates are recorded; conversions are not.** A transaction with legs in two
+currencies records its rate on the leg in the currency other than the transaction currency, as
+value ÷ amount (5.1). Converted amounts are never stored: they are computed each time they are
+needed — in a budget, a dashboard total, net worth, credit utilisation, a review item's impact
+(`MON-2`).
 
 **Two kinds of exchange rate:**
 
 | Rate | Where it comes from | What it is for |
 |---|---|---|
-| **Transaction rate** | Implied by the legs of a transaction that mixes currencies (5.1) | Recording what actually happened, such as paying a foreign-currency debt in the local currency |
-| **Reference rate** | A rate per currency pair and date, from a source decided in `docs/architecture.md` | Consolidating balances and totals into the reporting currency |
+| **Transaction rate** | In a transaction with legs in two currencies, value ÷ amount of its leg in the currency other than the transaction currency (5.1) | Recording what actually happened, such as paying a credit card's balance in one currency from an account in another (example 6 in 5.2) |
+| **Reference rate** | One per currency other than the reporting currency, in units of the reporting currency per unit of that currency. It comes from the confirmed transaction (5.4) that mixes that currency with the reporting currency and has the latest date on or before the conversion date: its transaction rate when its transaction currency is the reporting currency, or 1 ÷ its transaction rate when its transaction currency is that currency. When there is no such transaction, it is the rate the owner entered for that currency, which has no date | Converting an amount into the reporting currency, in a figure that combines currencies or in a review item's impact |
 
-A figure that needs a reference rate that does not exist for its date is shown as incomplete. A
-rate is never assumed. The spread between a transaction rate and the reference rate is not
-recorded as a cost.
+A transaction that mixes two currencies other than the reporting currency records its
+transaction rate, but gives no reference rate.
+
+The conversion date of an amount depends on what it is part of:
+
+| Converted amount | Conversion date |
+|---|---|
+| A figure for a period, such as spending in a month | The date of the transaction each leg belongs to |
+| A figure on a date, such as a balance, net worth or credit utilisation | That date |
+| A review item's impact (5.11), an amount about one item | The date of the transaction, captured record or statement line it concerns; `openspec/specs/review/` decides the case with no date |
+
+A figure made of other figures, such as months of essential spending covered (5.14), converts
+each part by its own row.
+
+There is no external rate source and no daily rate record. Every converted amount carries every
+reference rate it used, each with the date of the transaction it comes from or a mark that the
+owner entered it (`MON-3`). A figure that needs the reference rate of a currency with no such
+transaction and no entered rate is shown as incomplete; for a review item's impact,
+`openspec/specs/review/` decides. A rate is never assumed.
+
+The difference between a reference rate used to estimate a figure and the transaction rate of a
+later payment is not recorded as a cost (example in 5.2).
 
 ## 4. Financial structure
 
@@ -86,10 +120,36 @@ depends on which institution an account belongs to.
 | Currencies | One or more. Each currency has its own balance |
 | Liquid | Whether its balance counts as money available at short notice. Set by the owner, required |
 | Capture method | How its transactions reach Trueup: notified, statement only, or manual. Used to show capture coverage |
-| Cut-off date | The date of its opening balance |
+| Creation date | The date on which it was created in Trueup, set automatically. Its opening balance is dated on it, and no transaction on it is dated earlier (`ACC-4`). Its first reconciled period starts after it (5.8) |
 | Status | Active or closed. A closed account keeps its history |
 | Ownership | Own, or third-party (4.5) |
 | Attention | Whether its transactions are highlighted in review even when recorded automatically |
+
+The owner creates each account, except deferred-spending accounts (4.3), with an opening balance
+in each of its currencies: on a credit card, its debt in each currency; on a money-lent or
+shared-expense account, one opening balance per debtor, each an open item (5.5). A third-party
+account has none, since its balance is not tracked (4.5). An opening balance is recorded with an
+adjustment (5.1, example 18 in 5.2).
+
+An opening balance is the account's balance at the moment it is created: it includes every
+operation before that moment, including earlier operations of the same day. Transactions dated
+on the creation date can still be entered by hand, for operations after that moment; a
+transaction has a date but no time. A captured record dated on the creation date of an account
+it maps to, other than one the owner entered by hand, becomes a review item asking whether the
+opening balance already includes it (5.11). Each account starts on its own creation date: an
+account created a day after another starts a day later.
+
+The owner creates each account no later than the date of its first operation. An operation dated
+before an account's creation date is never recorded on it (`ACC-4`); any difference it leaves is
+closed at reconciliation (5.8).
+
+A credit card also has:
+
+| Attribute | Meaning |
+|---|---|
+| Credit limit | One amount, in one currency, shared by all the card's currencies (`CARD-1`) |
+| Statement day | The day of the month on which each cycle closes, such as the 25th. It gives each cycle's computed statement date (5.7). What it gives in a month without that day is decided in `openspec/specs/card-cycles/` |
+| Payment due date rule | Either a fixed day of the following month, such as the 10th, or a number of days after the statement date, such as 20 |
 
 A **balance** is always derived (`ACC-2`). Assets have positive balances; liabilities have
 negative balances, so net worth is the sum of all balances.
@@ -101,7 +161,7 @@ negative balances, so net worth is the sum of all balances.
 | Cash | Asset | Usually reconciled by counting |
 | Bank account | Asset | Can have instruments (debit cards) |
 | Digital wallet | Asset | — |
-| Credit card | Liability | Has a credit limit and a cycle rule (5.7). Can hold balances in several currencies. Can carry instalment plans. Can have instruments |
+| Credit card | Liability | Has a credit limit, a statement day and a payment due date rule (4.2), which define its cycles (5.7). Can hold balances in several currencies. Can carry instalment plans. Can have instruments |
 | Loan | Liability | Its balance is outstanding principal. Has a schedule (5.6) |
 | Mortgage | Liability | Same as loan |
 | Money lent | Asset | Every leg names the person who owes it (5.5) |
@@ -109,8 +169,11 @@ negative balances, so net worth is the sum of all balances.
 | Deposit · severance fund · pension fund | Asset | — |
 | Transport card · membership · gift card | Asset | Prepaid balance. Topping it up is a transfer |
 | Property | Asset | Valued by hand: changes of value are revaluations (5.1), never income |
-| Deferred spending | Asset | Internal. Created for a plan whose spending is recognised per instalment (5.6) |
+| Deferred spending | Asset | Internal. Created by Trueup for a plan whose spending is recognised per instalment (5.6), and held in the plan's currency. Its opening balance is the plan's spending not yet recognised on its creation date, from the plan's schedule: zero for a plan that starts on or after that date, recorded as in example 13a; the remaining amount for a plan already running, such as +2,100.00 when 7 instalments of 300.00 of example 13b remain |
 | Third-party account | — | Its balance is not tracked (4.5) |
+
+The *ignored identifier* among the kinds of account in `docs/product.md` 7.2 is not an account:
+it is an identifier mapping whose target is Ignore (4.4).
 
 ### 4.4 Instruments and identifiers
 
@@ -130,7 +193,7 @@ compared without case. An **identifier mapping** sends a normalised identifier t
 
 An identifier with no mapping produces a review item. Text that an institution writes about an
 operation, such as "transfer between your accounts", never decides which accounts are involved
-or whose they are; only identifier mappings do (`ID-1`).
+or whose they are; only identifier mappings and ownership settings (4.5) do (`ID-1`).
 
 ### 4.5 Third-party accounts and ownership
 
@@ -148,7 +211,9 @@ is whose money it is. The account's ownership settings answer it:
 |---|---|
 | Default owner | Third party, owner, or none. With *none*, every such transaction is a review item |
 | Category when the third party owns it | For example, a family-support category. Money sent to the third party is spending in it |
-| Attention | Highlight these transactions in review, so the default can be changed in one action |
+
+The account's Attention attribute (4.2) highlights these transactions in review, so the default
+can be changed in one action.
 
 | The money is… | Recorded as |
 |---|---|
@@ -183,7 +248,7 @@ Every **expense category** has three attributes, whose values the owner sets:
 |---|---|---|
 | Necessity | Essential · discretionary | Months of essential spending covered by liquid assets |
 | Cost behaviour | Fixed · variable | Fixed costs ÷ income |
-| Financial cost | Yes · no | Interest and fees; debt service |
+| Financial cost | Yes · no | Debt service ÷ income |
 
 Indicators read these attributes, never category names or identities (`IND-1`). A category that
 has been used is archived, never deleted.
@@ -199,10 +264,10 @@ A **transaction** has:
 
 | Attribute | Meaning |
 |---|---|
-| Date | When the operation happened, as a calendar date in the workspace time zone |
+| Date | When the operation happened, as a calendar date in the workspace time zone. Never earlier than the creation date of any account the transaction has a leg on (`ACC-4`) |
 | Transaction currency | The currency in which leg values are expressed |
 | Description | Text shown to the owner |
-| Status | Proposed, confirmed or void (5.3) |
+| Status | Proposed, confirmed or void (5.4) |
 | Extraordinary | Whether averages may exclude it |
 | Captured records | The records it was derived from, if any |
 | Plan instalment | The plan instalment it pays, if any |
@@ -214,11 +279,16 @@ A **leg** has:
 |---|---|
 | Target | Exactly one of: an account in one of its currencies · a category · an adjustment |
 | Amount | In the leg's own currency |
-| Value | The same amount expressed in the transaction currency. Equal to the amount when the currencies match |
+| Value | The same amount expressed in the transaction currency. Equal to the amount when the currencies match. Otherwise it is the amount actually exchanged, not a conversion, and value ÷ amount is the transaction rate (3) |
 | Counterparty | Required on legs of money-lent and shared-expense accounts |
 | Note | Optional |
 
 **The values of a transaction's legs always sum to zero** (`TX-1`).
+
+**Currencies in a transaction.** Either every leg is in the transaction currency, with any number
+of legs, or the transaction has exactly two legs: one in the transaction currency and one in
+another currency (`TX-8`). A fee charged on a payment between currencies is therefore a
+transaction of its own.
 
 **Sign convention.** An account leg is the change in that account's balance, from the owner's
 point of view: positive when she has more or owes less. A category or adjustment leg carries the
@@ -230,7 +300,7 @@ income in a category is the negated sum. How amounts are displayed is decided in
 
 | Adjustment | Used for |
 |---|---|
-| Opening balance | An account's balance at its cut-off date |
+| Opening balance | An account's balance at the moment it is created, dated on its creation date (4.2) |
 | Revaluation | A change in the value of a property |
 | Unexplained difference | A reconciliation difference the owner chooses not to classify |
 
@@ -247,7 +317,7 @@ Invented amounts. Reporting currency EUR.
 | 3 | Top-up of a wallet | Checking −100.00 · Wallet +100.00 |
 | 4 | Card payment | Checking −500.00 · Card X +500.00 |
 | 5 | Purchase in USD on card X (transaction currency USD) | Card X (USD) −20.00 · Subscriptions +20.00 |
-| 6 | Paying USD 100.00 of card X's USD balance with EUR 92.00 (transaction currency EUR) | Checking −92.00 · Card X (USD) +100.00, value +92.00 |
+| 6 | Paying the USD 20.00 of example 5 from a EUR account: EUR 18.40 debited, USD 20.00 applied to the card (transaction currency EUR) | Checking −18.40 · Card X (USD) +20.00, value +18.40 |
 | 7 | Dinner for four; her share is 30.00 | Card X −120.00 · Restaurants +30.00 · Shared expense (A) +30.00 · Shared expense (B) +30.00 · Shared expense (C) +30.00 |
 | 8 | A repays her | Wallet +30.00 · Shared expense (A) −30.00 |
 | 9 | C will not repay | Shared expense (C) −30.00 · Gifts +30.00 |
@@ -260,8 +330,18 @@ Invented amounts. Reporting currency EUR.
 | 15 | Money sent by mistake to a third-party account, marked as hers | Checking −1,000.00 · Own funds in T +1,000.00 |
 | 16 | The institution charges a fee on her funds in T | Own funds in T −10.00 · Bank fees +10.00 |
 | 17 | Money sent to T for the third party | Checking −200.00 · Family support +200.00 |
-| 18 | Opening balances at cut-off | Checking +2,500.00 · Opening balance −2,500.00 ; Card X −800.00 · Opening balance +800.00 |
+| 18 | Opening balances, each dated on its account's creation date | Checking +2,500.00 · Opening balance −2,500.00 ; Card X −800.00 · Opening balance +800.00 |
 | 19 | Cash counted 35.00 short; she classifies it | Cash −35.00 · Cash spending +35.00 |
+
+**Rates in examples 5 and 6.** Card X holds balances in EUR and USD; Checking holds EUR, the
+reporting currency. Example 6 records the transaction rate 18.40 ÷ 20.00 = 0.92 EUR per USD.
+From its date until a confirmed transaction with a later date mixes USD with EUR, 0.92 is the
+reference rate of USD. If the reference rate on the date of example 5 was 0.90, the
+Subscriptions budget counts that purchase as EUR 18.00, and still does after example 6: the
+EUR 0.40 difference is not recorded as a cost.
+
+If the notification of example 6 gives only the amount debited, EUR 18.40, the USD 20.00 applied
+to the card is proposed from the card's statement (5.7).
 
 ### 5.3 Kind of a transaction
 
@@ -269,11 +349,11 @@ The kind is derived from the legs, never chosen (`TX-4`):
 
 | Legs | Kind | Sub-kind, derived from the kinds of the accounts involved |
 |---|---|---|
-| Only accounts | **Transfer** | Card payment (4) · top-up (3) · withdrawal · saving · debt payment (11) · lending |
+| Only accounts | **Transfer** | Card payment (example 4) · top-up (example 3) · withdrawal · saving · debt payment (example 11) · lending |
 | Accounts and expense categories | **Expense** | — |
 | Accounts and income categories | **Income** | — |
-| A mix | One kind per leg group | 7: expense and lending · 10: debt payment and expense |
-| Only adjustments and accounts | **Adjustment** | Opening (18) · revaluation · reconciliation |
+| A mix | One kind per leg group | Example 7: expense and lending · example 10: debt payment and expense |
+| Only adjustments and accounts | **Adjustment** | Opening (example 18) · revaluation · reconciliation |
 
 ### 5.4 Lifecycle
 
@@ -289,7 +369,7 @@ captured record ──► proposed transaction ──► confirmed transaction
 | Confirmed | Yes | Confirmed by the owner, or by a rule she set to apply automatically |
 | Void | No | Discarded with a reason, such as a duplicate; kept for audit |
 
-Proposed transactions are shown as pending next to every figure they would change (`TX-3`).
+Proposed transactions are shown as pending (`TX-3`).
 
 A confirmed transaction can be corrected. Every correction is kept with its time and previous
 values (`TX-6`). A correction inside a reconciled period requires reopening that reconciliation
@@ -325,7 +405,7 @@ the interest saved by a revision, as the difference in total interest between tw
 
 **Instalment plans** spread a purchase over instalments on a credit card or with another lender.
 A plan has: the account, the originating transaction, the amount, the number of instalments, the
-rate (which may be zero), the schedule, and the **recognition mode**:
+interest rate (which may be zero), the schedule, and the **recognition mode**:
 
 | Recognition mode | Spending is recognised | Example |
 |---|---|---|
@@ -336,32 +416,51 @@ On a credit card, each instalment billed in a cycle is part of that cycle's amou
 
 ### 5.7 Credit cards
 
-A credit card has:
+A credit card's credit limit, statement day and payment due date rule are account attributes
+(4.2).
 
-- a **credit limit**, in one currency, shared by all its currencies;
-- a **cycle rule**: the closing day and how the due date follows from it.
+Each **cycle** ends on a statement date and has a payment due date. Both are computed from the
+card's attributes, and replaced by the statement's when a statement for that cycle is recorded
+(5.8). For example, with statement day the 25th and a payment due date rule of 20 days after the
+statement date, the cycle that closes on 25 March has its payment due date on 14 April.
 
-Each **cycle** has a closing date and a due date, computed from the rule and replaced by the
-statement's when one is uploaded. Per currency, a cycle has:
+Per currency, a cycle has:
 
-| Figure | Source |
+| Cycle amount | Source |
 |---|---|
 | Total balance | The account balance, including instalments not yet billed |
-| Amount due in full | The total balance at the closing date, minus instalments not yet billed. Computed; replaced by the statement's when uploaded |
+| Amount due in full | The total balance at the statement date, minus instalments not yet billed. Computed; replaced by the statement's when a statement for that cycle is recorded |
 | Minimum payment | The statement, or entered by the owner. Unknown otherwise |
 
-Credit utilisation = total balance across all currencies, converted at the reference rate ÷
-credit limit.
+Credit utilisation of a card on a date = what the card owes — its total balances, negated — ÷ its
+credit limit. When the card's balances and its credit limit are not all in one currency, all of
+them are converted into the reporting currency (3).
+
+**Paying a card's debt from an account in another currency.** The notification gives the amount
+debited, but may not give the amount applied to the card. Trueup then proposes the amount
+applied from the amount due in full in that currency on the card's statement for the cycle being
+paid, when that statement is recorded (5.8). The transaction stays proposed, as a review item
+with reason *Data the capture channel could not read or did not provide* (5.11), until the owner
+confirms the amount or corrects it: the payment may be partial or mistaken. Until that statement
+is recorded, the item waits, and the owner can supply the amount herself. The transaction gives a
+reference rate only once it is confirmed (`MON-3`). Example 6 in 5.2 shows such a payment.
 
 ### 5.8 Statements and reconciliation
 
-A **statement** belongs to an account and a period. It has a closing date and, per currency, a
-closing balance; on a credit card, also a due date and a minimum payment. When the owner uploads
-the statement file, Trueup extracts its **lines** (date, description, amount, currency) and keeps
-the file.
+A **statement** belongs to an account and a period. It has a statement date and, per currency, a
+closing balance; on a credit card, also a payment due date and a minimum payment. When the owner
+uploads the statement file, Trueup extracts its **lines** (date, description, amount, currency)
+and keeps the file.
 
 A **reconciliation** compares, for one account and currency on one date, the institution's
 balance with the recorded balance of confirmed transactions.
+
+An account is reconciled period by period: a credit card per cycle (5.7); every other account
+whose balance is tracked per calendar month, except deferred-spending, own-funds (4.5),
+money-lent, shared-expense and property accounts, which are never reconciled. Its first reconciled period
+is the first that starts after its creation date; the period in which it was created is never
+reconciled. The recorded balance at the end of one period is the starting balance of the next.
+Statement lines dated before the account's creation date are not considered.
 
 | Outcome | What happens |
 |---|---|
@@ -388,6 +487,18 @@ time it was read, and the source's own parse status when there is one.
   count provided by the source (`CAP-3`).
 - One captured record backs at most one transaction. One transaction may be backed by several
   records — for example, when both institutions notify the same transfer (`CAP-4`).
+- A record a channel delivers is **discarded**, not captured, when it is dated before the
+  creation date of an account it maps to, or before the creation date of the first account when
+  it maps to none. Of a discarded record, Trueup keeps only its external key, under its channel;
+  the rest is not kept. It never becomes a transaction or a review item (`CAP-5`), and later
+  reads skip it (`CAP-2`).
+- When a record has no operation date, the date its notification was received, in the
+  workspace time zone, decides: received before that creation date, it is discarded; otherwise
+  it becomes a review item with reason *Data the capture channel could not read or did not
+  provide* (5.11). A notification is received after its operation, so one received before the
+  creation date certainly predates it. On the staging sheet, the received date is that of
+  column D, "when the email was received" (`docs/reference/staging-sheet.md`), converted from the
+  extractor's time zone.
 
 Manual entry is a capture channel too: what the owner typed is kept as its captured record.
 
@@ -419,12 +530,13 @@ decided and whether it became a rule.
 | No rule matched |
 | Rule in *confirm* mode |
 | Unknown identifier |
-| Data the capture channel could not read |
+| Data the capture channel could not read or did not provide |
 | Ownership of money in a third-party account |
 | Statement line missing from the record |
 | Incoming payment that may settle money owed to her |
 | Captured records that may describe the same transaction |
 | Payment that does not match its plan instalment |
+| Captured record dated on its account's creation date, which the opening balance may already include (4.2) |
 
 Review items are ordered by impact (`REV-2`). A resolved item never reopens for the same
 captured record (`REV-1`).
@@ -444,48 +556,52 @@ A **budget** is a monthly amount, in the reporting currency, for one expense cat
 
 | Figure | Definition |
 |---|---|
-| Spent | The category's confirmed legs in the month, converted at the reference rate of each transaction date. Refunds reduce it |
-| Pending | Proposed legs in the category, shown apart (`BUD-2`) |
+| Spent | The category's confirmed legs in the month, converted into the reporting currency (3). Refunds reduce it |
 | Pace | Spent ÷ (budget × fraction of the month elapsed) |
+
+Proposed legs in the category are not part of Spent; they are shown apart, as pending (`BUD-2`).
 
 ### 5.14 Derived figures
 
 | Figure | Definition |
 |---|---|
 | Balance of an account on a date | Sum of its confirmed legs up to that date, per currency |
-| Net worth | Sum of all balances, converted at the reference rate of the date |
+| Net worth on a date | Sum of all balances on that date, converted into the reporting currency (3) |
 | Income · spending | Income-category and expense-category legs of the period. Adjustments and transfers excluded |
 | Net cash flow | Income − spending |
 | Savings rate | (Income − spending) ÷ income |
 | Fixed costs ÷ income | Spending in categories with cost behaviour *fixed* ÷ income |
-| Debt service ÷ income | Payments to loans and mortgages in the period, principal and costs together ÷ income |
+| Debt service ÷ income | Payments to loans and mortgages in the period, principal and costs together ÷ income. Costs are the legs of those payments in categories with financial cost *yes* |
 | Months of essential spending covered | Balances of liquid accounts ÷ average monthly spending in *essential* categories over the last three complete months |
-| Interest and fees | Spending in categories with financial cost *yes* |
-| Capture coverage | Per account, from its capture method and the state of its reconciliations |
+| Capture coverage | Per account, from its capture method and the state of its reconciliations; for an account that is never reconciled (5.8), from its capture method alone |
 
 Every figure carries its completeness: incomplete period, unreconciled accounts, accounts with
-incomplete capture, pending items, missing reference rates (`IND-2`).
+incomplete capture, pending items, missing reference rates (`IND-2`). Only an account within the
+scope of reconciliation (5.8) can be unreconciled.
 
 ## 6. Invariants
 
 | ID | Invariant |
 |---|---|
 | **WS-1** | Every record belongs to exactly one workspace. Uniqueness is scoped to the workspace. No setting is global |
-| **MON-1** | Amounts are exact to their currency's precision. No floating-point arithmetic on money |
-| **MON-2** | A leg's amount is stored in its own currency. Conversions are derived, never stored in its place |
-| **MON-3** | No conversion without a recorded rate. A figure missing a reference rate is shown as incomplete |
+| **MON-1** | Amounts are exact decimals, such as 109.83, kept with exactly their currency's number of decimal places. Binary floating-point types are never used for money |
+| **MON-2** | A leg's amount is stored in its own currency. In a transaction with legs in two currencies, the leg in the currency other than the transaction currency records the rate through its amount and value. Converted amounts are never stored; they are computed each time they are needed |
+| **MON-3** | A reference rate is a currency's rate against the reporting currency. It comes only from the owner's confirmed transactions or from the rate she entered for that currency. Every converted amount carries every reference rate it used, with the date of the transaction it comes from or a mark that she entered it. A figure that needs a reference rate that does not exist is shown as incomplete |
+| **MON-4** | The reporting currency cannot change once a transaction has been confirmed |
 | **ACC-1** | An account's class is derived from its kind |
 | **ACC-2** | A balance is the sum of confirmed legs, opening balance included. It is never entered |
 | **ACC-3** | An instrument has no balance; its legs are recorded on its account |
+| **ACC-4** | No transaction with a leg on an account is dated before that account's creation date |
 | **ID-1** | Accounts and ownership are resolved only through identifier mappings and ownership settings, never from text written by an institution |
 | **ID-2** | A normalised identifier maps to at most one target in a workspace |
 | **TX-1** | The values of a transaction's legs sum to zero |
 | **TX-2** | Each leg targets exactly one account-currency, category or adjustment |
-| **TX-3** | Only confirmed transactions change figures. Proposed ones are shown as pending |
+| **TX-3** | Figures count only legs of confirmed transactions. Proposed ones are shown as pending |
 | **TX-4** | A transaction's kind is derived from its legs |
 | **TX-5** | Money moving between the owner's own accounts is never income or spending |
 | **TX-6** | A confirmed transaction is never overwritten or deleted: corrections keep history; removal is a void with a reason |
 | **TX-7** | Spending is recognised on the transaction date in full, unless its plan recognises it per instalment |
+| **TX-8** | Either every leg of a transaction is in the transaction currency, or it has exactly two legs: one in the transaction currency and one in another currency |
 | **OWN-1** | Whose money moves to or from a third-party account is decided by the owner or by that account's default owner; otherwise it is a review item |
 | **RCV-1** | Repaying money owed to the owner is never income |
 | **RCV-2** | Allocations to an open item never exceed its amount |
@@ -493,9 +609,10 @@ incomplete capture, pending items, missing reference rates (`IND-2`).
 | **DEBT-2** | A revised schedule is a new version; earlier versions are kept |
 | **CARD-1** | A credit card has one credit limit, shared by its currencies |
 | **CAP-1** | A captured record is never modified |
-| **CAP-2** | A captured record is unique per channel and external key; reading it again creates nothing |
+| **CAP-2** | A captured record, or the kept key of a discarded record, is unique per channel and external key; reading the record again creates nothing |
 | **CAP-3** | A read is processed only after it is proven complete |
 | **CAP-4** | A captured record backs at most one transaction; a transaction may be backed by several records |
+| **CAP-5** | A record dated before the creation date of an account it maps to, or before the creation date of the first account when it maps to none, is discarded: only its external key is kept, and it never becomes a transaction or a review item. A record with no operation date is dated, for this rule, by when its notification was received; if that is on or after the creation date, it becomes a review item |
 | **CLS-1** | Classification rules are evaluated in the owner's order; the first match wins |
 | **CLS-2** | No category, account, counterparty or ownership is assigned by default; what no rule or setting resolves becomes a review item |
 | **REV-1** | A resolved review item never reopens for the same captured record |
@@ -506,21 +623,22 @@ incomplete capture, pending items, missing reference rates (`IND-2`).
 | **BUD-1** | Budgets exist only for expense categories, per month, in the reporting currency |
 | **BUD-2** | Budget figures count confirmed legs; proposed legs are shown apart |
 | **IND-1** | Indicators read category attributes and account settings, never category or account names or identities |
-| **IND-2** | Every figure carries its completeness flags |
+| **IND-2** | Every figure carries its completeness flags. An account that is never reconciled (5.8) never counts as unreconciled |
 
 ## 7. Code and data
 
 | Code defines — changing it needs a change proposal | Data defines — the owner changes it in Trueup |
 |---|---|
-| The kinds of account and their behaviour (4.3) | Institutions, accounts, instruments, identifiers, identifier mappings |
-| The leg model, adjustments and sign convention | Currencies, reporting currency, time zone, reference rates |
+| The kinds of account and their behaviour (4.3) | Institutions, accounts and their opening balances, instruments, identifiers, identifier mappings |
+| The leg model, adjustments and sign convention | Currencies, reporting currency (set once, `MON-4`), time zone, the rate the owner enters for each currency (3) |
 | Transaction statuses, kinds and their derivation | Categories, groups and their attribute values |
 | The three category attributes and their values | Counterparties and their aliases |
 | Review reasons | Classification rules, their order and mode |
 | Recognition modes | Plans, schedules and their versions |
-| Reconciliation outcomes and locking | Expectations, budgets |
-| Indicator definitions (5.14) | Liquidity, capture method, ownership settings and attention per account |
+| Reconciliation periods, outcomes and locking | Expectations, budgets |
+| Indicator definitions (5.7, 5.13, 5.14) | Liquidity, capture method, ownership settings and attention per account |
 | Completeness flags | Exclusions for averages; extraordinary transactions |
+| How reference rates are derived (3) | |
 
 A new kind of account with behaviour of its own, or a new indicator, is a code change. A new
 account, category, rule, currency or institution is not.
@@ -535,3 +653,4 @@ document; when it needs to, this document changes first.
 
 | Date | Version | Change |
 |---|---|---|
+| 2026-10-23 | 1.0 | First approved version. Defines the concepts, the leg model, accounts created with an opening balance on their own creation date, exchange rates always against the reporting currency, card cycles and reconciliation by period, capture and review, budgets and indicators, and the invariants |

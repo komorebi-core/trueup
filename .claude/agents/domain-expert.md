@@ -57,7 +57,7 @@ Kinds of situation, never instances:
 - a movement between own accounts in different currencies; a charge in a foreign currency;
 - the same movement captured twice, or from two sources;
 - a correction to a movement in a period already reconciled;
-- an opening balance at the start date;
+- an opening balance;
 - a recurring payment that is skipped, or whose amount changes;
 - an account that is closed; an asset whose value changes.
 
