@@ -7,7 +7,7 @@ single question. Together they are the context for every specification and every
 
 | Document | Answers | Status | Read in full before working on it |
 |---|---|---|---|
-| `product.md` | Why Trueup exists, for whom, what success means, which capabilities it has and in what priority | 1.2 | — |
+| `product.md` | Why Trueup exists, for whom, what success means, which capabilities it has and in what priority | 1.3 | — |
 | `domain.md` | What each concept is, how concepts relate, which rules always hold, what is code and what is data | 1.0 | `product.md` |
 | `quality-attributes.md` | How well Trueup must work, measurably, and which changes it must absorb without code changes | Not started | `product.md` · `domain.md` |
 | `experience.md` | How the owner uses Trueup: flows, screens, states and visual language | Not started | `product.md` · `domain.md` · `quality-attributes.md` |

@@ -6,12 +6,58 @@ the same change.
 
 An item marked **Open** needs the owner's answer. It is never resolved by assumption.
 
-## For `product.md`
+## For `domain.md`
 
-- **B-7** — **Open.** The one-time configuration import resolves identifier mappings to
-  accounts, so it must also create those accounts, each with its kind and currencies confirmed
-  by the owner. `product.md` currently lists categories, rules and identifiers only. Confirm
-  whether accounts are part of the import.
+- **B-31** — Section 5.8, outcome *Different*, states an outcome for each discrepancy it lists: a
+  statement line missing from the record becomes a review item; a recorded transaction that the
+  statement shows was recorded wrongly — a different amount, a duplicate, an operation that never
+  took place — is corrected or voided by the owner; only the difference that remains is closed by
+  an explicit transaction (`REC-3`). `docs/product.md`, 7.1 `reconciliation`, states this scope.
+- **B-32** — Section 4.2: a credit card's opening balance is its total debt, including
+  instalments not yet billed. When the institution reports only billed amounts, the owner adds
+  the instalments still to be billed.
+- **B-33** — Section 5.12: an expectation also covers an occurrence that arrives with another
+  amount or date, matched when the owner confirms it, and an occurrence the owner marks as
+  skipped, which is no longer flagged as missing. `docs/product.md`, 7.1 `recurring`, states
+  this scope.
+- **B-34** — Section 4.3: delete the paragraph after the table of kinds, which refers to an
+  *ignored identifier* entry in `docs/product.md` 7.2 that no longer exists. Whether the Ignore
+  target of an identifier mapping (4.4) stays is B-46.
+- **B-35** — The scope facts that `docs/product.md` states are cited from it, not restated as
+  this document's own: which accounts' balances are tracked and what a third-party account is
+  (7.2 and 2), that an account whose balance is tracked starts from an opening balance on its
+  creation date (7), which delivered records are discarded (7.1 `capture`), and which accounts
+  and periods reconciliation covers (7.1 `reconciliation`).
+- **B-36** — Sections 5.8 and 5.9 cite `docs/product.md`, 7.1 `capture` and `reconciliation`,
+  for a transaction's date — that of the first notification that arrives, or the date the owner
+  changes it to at reconciliation — and for the period it belongs to. Section 5.8 adds that a
+  statement line is matched against the whole record, including transactions in earlier,
+  reconciled periods; a line that matches one is never missing from the record.
+- **B-37** — `docs/product.md`, 7.1 `reconciliation`, states that a reconciled period is never
+  reopened, that its confirmed transactions cannot be changed, and how a transaction that arrives
+  dated inside one is resolved. Section 5.4 and `REC-1`, which require reopening a reconciliation
+  to correct a transaction inside it, change accordingly: a correction is a new transaction in a
+  period not yet reconciled. Section 5.11 gains the review reason for a proposed transaction
+  dated inside a reconciled period; discarding it means it never becomes a transaction.
+- **B-39** — A change in the balance of a deposit, severance fund or pension fund that none of the
+  owner's movements explains is recorded as income or spending in a category; unlike a property's
+  change of value (5.1), it is not a revaluation.
+- **B-40** — A budget belongs to a category group, not to a category. Section 5.13, `BUD-1`,
+  `BUD-2` and everything that implies per-category budgets change accordingly. There is no pace
+  figure. Every budget is expressed in the reporting currency. Define how a group's spent amount
+  and each category's share of it are computed, and whether that is an invariant, including the
+  shares when a category's refunds exceed its purchases in the month, and when a group's spending
+  is zero or negative. Only expense category groups have budgets.
+- **B-41** — The reporting currency is the default currency in which figures are expressed, and
+  budgets are expressed in it. Every amount that a figure combines across currencies, budgets
+  included, is converted into it (3).
+- **B-42** — Section 4.2, Status, cites `docs/product.md`, 7.1 `financial-structure`: an account
+  is closed only when its balance is zero, after a transfer or withdrawal empties it, and no
+  transaction is recorded on it after it is closed.
+- **B-46** — Section 4.4: decide whether the Ignore target of an identifier mapping is kept. It
+  has no current use: the one case it was meant for is a third-party account (4.5).
+- **B-47** — Section 5.8 cites `docs/product.md`, 7.1 `reconciliation`, for the accounts that are
+  never reconciled, which now include deposits, severance funds and pension funds.
 
 ## For `quality-attributes.md`
 
@@ -38,6 +84,11 @@ An item marked **Open** needs the owner's answer. It is never resolved by assump
   attention highlighted and changeable in one action.
 - **B-17** — Pending amounts are shown next to the figures they would change, apart from the
   confirmed amount (for example, "+ 22.00 pending review").
+- **B-45** — The dashboard shows each group budget's progress as a chart, so the owner sees at a
+  glance how much of it she has spent (for example, 90%) or that she is over it. There is no pace
+  projection and no budget alert or notification. Opening a group's chart shows its detail: the
+  categories in the group, the amount spent in each, and each one's percentage of the group's
+  spending. Complements B-13 and B-14.
 
 ## For `architecture.md` and `adr/`
 
@@ -80,6 +131,23 @@ An item marked **Open** needs the owner's answer. It is never resolved by assump
   (column J empty) is dated. Recognising these rows never writes to the sheet, which stays
   read-only (`docs/product.md`, 7.5).
 
+## For `reference/spreadsheet-import.md`
+
+- **B-43** — The import creates the accounts of the `Accounts` sheet, each with its kind and
+  currencies confirmed by the owner. The Category column of `Accounts` only proposes each
+  account's kind; it is not an expense category of `Categories`. Start Value is imported as the
+  account's opening balance. The owner fills it, before importing, with the account's updated
+  balance: its balance at the moment she confirms the import, which becomes each imported
+  account's creation date — the value she would otherwise enter by hand. The import is started
+  and confirmed on the same day. A money-lent or shared-expense account's Start Value is split by
+  debtor; a credit card's includes instalments not yet billed (B-32); a third-party account has
+  none, and her own funds in it, if any, open an account of her own funds. The section
+  `Accounts` and the paragraph that says accounts are pending confirmation change accordingly.
+- **B-44** — The Monthly Budget column of `Categories` is per category, and budgets belong to
+  expense category groups (B-40), so it is not imported as a budget. While reviewing the import,
+  the owner enters each expense category group's monthly budget (`docs/product.md`, 7.1
+  `financial-structure`). The `Categories` table changes accordingly.
+
 ## For `AGENTS.md` and `openspec/config.yaml` (end of the documentation phase)
 
 - **B-27** — Method for construction: OpenSpec changes; requirements with WHEN/THEN scenarios,
@@ -90,3 +158,6 @@ An item marked **Open** needs the owner's answer. It is never resolved by assump
   change needs a decision no project document holds, it stops and the project document is
   amended first. Decisions in a `design.md` that other changes will depend on are promoted to an
   ADR when the change is archived.
+- **B-30** — Each capability's detailed behaviour has exactly one home,
+  `openspec/specs/<capability>/`, where `<capability>` is the capability's name in
+  `docs/product.md`, 7.1 or 7.4.
