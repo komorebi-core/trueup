@@ -1,6 +1,6 @@
 # Trueup — Product
 
-> **Version:** 1.3 · 2026-10-24 · approved by the owner
+> **Version:** 1.4 · 2026-10-26 · approved by the owner
 >
 > **Answers:** why Trueup exists, for whom, what success means, which capabilities it has and in
 > what priority.
@@ -53,9 +53,6 @@ Keeping a true picture of her money is hard for reasons that will not go away:
 - **Money is shared and owed.** She pays for groups and is reimbursed later, often partially;
   she buys in instalments; she carries loans and a mortgage. Each of these makes the money she
   spent differ from the money that left her accounts.
-- **Some accounts she operates — third-party accounts — hold money that is wholly or partly
-  someone else's,** and money leaving such an account may or may not be hers. Ownership cannot
-  be inferred from the account alone.
 
 Her finances are currently kept in a spreadsheet, which shows the limits of that approach:
 balances start from zero instead of real opening balances, so net worth is fictional; nothing is
@@ -107,11 +104,12 @@ Every capability and every design choice must be consistent with these. When two
 lower number wins.
 
 1. **No default fills a gap.** When the data or the owner's configuration does not determine an
-   account, category, currency, counterparty or ownership, the item goes to review. Trueup never
+   account, category, currency or counterparty, the item goes to review. Trueup never
    fills the gap with a default value.
 2. **Nothing changes a figure — a balance, total or indicator — without the owner's
-   decision.** A transaction affects figures only once confirmed — by her directly, or by a rule
-   or account setting she made to apply automatically. A rule set to wait for confirmation only
+   decision.** A transaction affects figures only once confirmed — by her directly, by a rule
+   she made to apply automatically, or by the recognition mode she chose for a plan, which
+   confirms each instalment's recognition. A rule set to wait for confirmation only
    pre-fills the item; it still waits for her.
 3. **Capture is literal, judgment is explicit, figures are derived.** What arrives through a
    capture channel (7.1) is kept exactly as received, except what `capture` discards.
@@ -138,8 +136,8 @@ it.
 
 The MVP is everything needed for Trueup to replace the owner's spreadsheet as the system of
 record, plus the reconciliation the spreadsheet never had. Each account's record starts on the
-date the account is created in Trueup; an account whose balance is tracked (7.2) starts from an
-opening balance the owner provides: its balance at the moment it is created. Transactions before
+date the account is created in Trueup; each account (7.2) starts from an opening balance the owner
+provides: its balance at the moment it is created. Transactions before
 that date stay in the spreadsheet and are not imported.
 
 ### 7.1 MVP
@@ -147,15 +145,15 @@ that date stay in the spreadsheet and are not imported.
 | Capability | Covers | Jobs |
 |---|---|---|
 | `access` | Signing in. Only the owner can reach any data | all |
-| `financial-structure` | Institutions. Accounts of every kind in 7.2, each with its currency or currencies and how its transactions are captured. Instruments, such as cards, and every identifier under which an account or instrument appears. Categories, each in a category group of income or of expense. The attributes of each account and each category that the indicators in 7.3 read, such as whether an account counts as liquid and a credit card's limit. Counterparties. The owner's settings. Closing an account once its balance is zero, after the transfer or withdrawal that empties it; no transaction is recorded on an account after it is closed. A one-time import of the configuration in her spreadsheet (2): her accounts, each with its kind and currencies and, when its balance is tracked, its opening balance; categories; rules; and identifiers. While reviewing the import, she enters each expense category group's monthly budget. Creating the accounts in the same import gives every imported identifier an existing account to point to, and every imported account the same creation date: the day she confirms the import. The import is a proposal: nothing in it becomes active until she has reviewed and confirmed it | J7 |
-| `transactions` | Recording transactions in the currency they were executed in. Transfers — money moving between her own accounts, such as a card payment, withdrawal or top-up — recorded once, as a single transaction, including between currencies, and never counted as income or spending. Splitting one transaction across several categories, or into her share and the shares others owe (`receivables`). Ownership when a third-party account is involved: the account's settings say whose the money is unless she decides otherwise and, when it is the third party's, the category of spending, so that money she sends to it is recorded automatically, without waiting for her decision; she can change the ownership of any single transaction. Changes in the value of property, entered by hand: they change net worth and are never income. A change in the balance of a long-term savings account (7.2) that none of her movements explains, such as a deposit's interest or a change in a pension fund's value, entered by hand from the balance its institution reports, as income or spending in a category. Derived balances and net worth | J3 |
+| `financial-structure` | Institutions. Accounts of every kind in 7.2, each with its currency or currencies and how its transactions are captured. Instruments, such as cards, and every identifier under which an account or instrument appears. Categories, each in a category group of income or of expense. The attributes of each account and each category that the indicators in 7.3 read, such as whether an account counts as liquid and a credit card's limit. Counterparties. The owner's settings. Closing an account once its balance is zero, after the transfer or withdrawal that empties it; no transaction is recorded on an account after it is closed. A one-time import of the configuration in her spreadsheet (2): her accounts, each with its kind, currencies and opening balance; categories; rules; and identifiers. While reviewing the import, she enters each expense category group's monthly budget. Creating the accounts in the same import gives every imported identifier an existing account to point to, and every imported account the same creation date: the day she confirms the import. The import is a proposal: nothing in it becomes active until she has reviewed and confirmed it | J7 |
+| `transactions` | Recording transactions in the currency they were executed in. Transfers — money moving between her own accounts, such as a card payment, withdrawal or top-up — recorded once, as a single transaction, including between currencies, and never counted as income or spending. Splitting one transaction across several categories, or into her share and the shares others owe (`receivables`). Changes in the value of property, entered by hand: they change net worth and are never income. A change in the balance of a long-term savings account (7.2) that none of her movements explains, such as a deposit's interest or a change in a pension fund's value, entered by hand from the balance its institution reports, as income or spending in a category. Derived balances and net worth | J3 |
 | `capture` | Bringing transactions in through capture channels: the staging sheet and manual entry. No duplicates: an operation notified by more than one source, such as a transfer that both banks notify, is recorded once, with the date of the first notification that arrives. Proof that a read lost nothing. Records a capture channel delivers that are dated before the creation of any account they concern, or before the first account was created when they concern none, are discarded: they never become transactions or items for review. Every other record is kept as received, as a captured record, alongside the transaction derived from it | J3 |
 | `classification` | Rules the owner manages that assign account, category, counterparty and description. Each rule either applies automatically or pre-fills the item and waits for confirmation | J3 |
 | `review` | Every transaction captured since her last review: what waits for her decision, each with the reason it needs her, and what was recorded automatically, including on accounts she marks for attention. Resolving an item and turning the answer into a rule in one action | J2, J3 |
 | `recurring` | Expected transactions, such as salary and fixed payments: expecting them, flagging when one has not arrived, recording it on confirmation, matching one that arrives with another amount or date when she confirms it, and marking an occurrence skipped | J2, J3 |
-| `reconciliation` | At the end of each period — a calendar month, or a credit card's billing cycle — starting with the first period that begins after the account is created: checking each account whose balance is tracked (7.2), except money lent, shared expenses, long-term savings accounts, property and her own funds held in third-party accounts, against its institution's balance or, for cash, against a count. A transaction belongs to the period that contains its date. When they differ and the institution issues a statement, the statement is compared line by line with the record: what is missing from the record goes to review; what the statement shows was recorded wrongly — a different amount, a duplicate, an operation that never took place — is corrected or voided by her; and when the institution booked an operation in the next period, she changes the transaction's date so that it falls there. Any difference that remains is closed by a transaction she records explicitly. A reconciled period is never reopened: its confirmed transactions cannot be changed, and a correction is a new transaction in a period not yet reconciled. A transaction that arrives later dated inside a reconciled period waits in review until she either changes its date so that it falls in a period not yet reconciled, or discards it | J1, J2, J3 |
+| `reconciliation` | At the end of each period — a calendar month, or a credit card's billing cycle — starting with the first period that begins after the account is created: checking each account (7.2), except money lent, shared expenses, long-term savings accounts and property, against its institution's balance or, for cash, against a count. A transaction belongs to the period that contains its date. When they differ and the institution issues a statement, the statement is compared line by line with the record: what is missing from the record goes to review; what the statement shows was recorded wrongly — a different amount, a duplicate, an operation that never took place — is changed or voided by her; and when the institution booked an operation in the next period, she changes the transaction's date so that it falls there. Any difference that remains is closed by a transaction she records explicitly. A reconciled period is never reopened: its confirmed transactions cannot be changed. A transaction that arrives later dated inside a reconciled period waits in review until she either changes its date so that it falls in a period not yet reconciled, or discards it | J1, J2, J3 |
 | `card-cycles` | Statement closing and due dates; statement balance per currency; minimum and full payment, including instalments due in the cycle; advance warning before each due date | J2, J5 |
-| `debt` | Loans and mortgages: outstanding principal, rate, instalment schedule and its revisions; each payment divided into principal, interest, insurance and fees; extra principal payments. Card instalment plans: each instalment is added to the card's amount due until the plan is paid off. Every plan that finances a purchase states when that spending is recognised: in full when the plan starts, or as each instalment is paid | J2, J5 |
+| `debt` | Loans and mortgages: outstanding principal, rate, instalment schedule and its revisions; each payment divided into principal, interest, insurance and fees; extra principal payments. Card instalment plans: each instalment is added to the card's amount due until the plan is paid off. Every plan that finances a purchase states when that spending is recognised: in full when the plan starts, or instalment by instalment: on a card, each instalment when the card bills it; with another lender, as each instalment is paid | J2, J5 |
 | `receivables` | Money owed to the owner. A shared expense is split into her own share, which is her spending, and the shares owed by named people. Money she lends. Settling an amount owed, fully or partially, with the payment that repays it — a repayment is never income. Writing off what will not be repaid | J5, J6 |
 | `budgets` | A monthly amount per expense category group. For each such group: what was spent in the month against its budget, and whether it is over it; and how that spending breaks down by category, with each category's amount and its share of the group's spending | J4 |
 | `dashboard` | The questions in 7.3 | J1, J2, J4, J5, J6 |
@@ -174,11 +172,8 @@ The kinds of account in scope.
 | Long-term savings | Deposit · severance fund · pension fund |
 | Prepaid | Transport card · membership · gift card |
 | Other assets | Property, valued by hand |
-| Special | Third-party account |
 
-Trueup tracks the balance of every account of these kinds except a third-party account (2). Of
-the money in a third-party account, it tracks only the part that is hers, as an account of her
-own funds held there.
+Trueup tracks the balance of every account of these kinds.
 
 Instruments in scope: debit card · credit card.
 
@@ -186,7 +181,7 @@ Instruments in scope: debit card · credit card.
 
 | Question | Indicators |
 |---|---|
-| Am I on track this month? | Net cash flow (transfers excluded) · savings rate · fixed costs ÷ income · debt service ÷ income · months of essential spending covered by liquid assets · credit utilisation per card |
+| Am I on track this month? | Net cash flow (transfers excluded) · savings rate · fixed costs ÷ income · debt service ÷ income · months of essential spending covered by liquid assets · credit utilisation per card · available credit per card |
 | Am I within budget? | Spending against budget per expense category group, with its breakdown by category · category groups over budget |
 | What do I need to do? | Due dates in the next 30 days · items pending review · unreconciled accounts · expected transactions that have not arrived |
 | What do I owe, and what am I owed? | Outstanding debt by loan, mortgage and instalment plan · instalments coming due · amounts owed to her, by person |
@@ -234,3 +229,4 @@ construction is added here before any work on it begins.
 | 2026-10-06 | 1.1 | The scope was refined. Property added as a kind of account, valued by hand, so mortgage debt has its asset. Each financing plan states when its spending is recognised. The spreadsheet's configuration is imported, its transactions are not: recording starts at a cut-off date. Indicator targets moved to Later. Review lists every new transaction, not only those that need a decision |
 | 2026-10-23 | 1.2 | The scope was refined again. Each account starts on the date it is created, from an opening balance, instead of a single cut-off date. Reconciliation is per period (a calendar month, or a card's billing cycle) and covers only accounts whose balance can be verified. A captured record dated before its account existed is discarded and only its key kept. The 'What does money cost me?' dashboard question is removed, and credit utilisation is shown per card |
 | 2026-10-24 | 1.3 | The body no longer cites any other document; this document is the first of the set. The one-time import also brings the accounts (kind and currencies confirmed by the owner) and their opening balances; she enters each category group's budget while reviewing it, and the import is started and confirmed the same day. Budgets are per expense category group, showing spent against budget with no pace warning. Reconciliation: dates can be changed at reconciliation, a reconciled period is never reopened, late transactions wait in review, long-term savings are not reconciled. Accounts close only at a zero balance. An operation notified more than once takes the date of the first notification; ignored identifiers are removed; money sent to a third-party account is recorded automatically. Investment accounts are no longer mentioned |
+| 2026-10-26 | 1.4 | Third-party accounts and own funds are removed. Reconciliation no longer mentions corrections, and the rule for late transactions is reworded. The recognition mode the owner chose for a plan can confirm a transaction (principle 2), and a card's instalments are recognised when the card bills them (`debt`). Available credit per card is added to 7.3. The terms "ownership", "account setting" and "balance is tracked" are removed |
