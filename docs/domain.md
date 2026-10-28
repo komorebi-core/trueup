@@ -47,7 +47,7 @@
 | **Rule** | Owner-managed configuration that resolves part of a captured record: an **identifier mapping** or a **classification rule** |
 | **Review item** | Something waiting for the owner's decision, with its reason |
 | **Plan** | A loan schedule or an instalment plan that spreads a debt over instalments |
-| **Statement** | The institution's account of a period: balances, dates and, when uploaded, lines |
+| **Statement** | The institution's account of a period. Trueup records its date, its closing balance in each currency and, when its file is uploaded, its lines (5.8) |
 | **Statement date** | The date on which a statement's period ends. On a credit card, the date on which a cycle closes |
 | **Payment due date** | The date by which a credit card cycle's amount due must be paid |
 | **Cycle** | A credit card's billing period, which ends on a statement date (5.7) |
@@ -110,6 +110,20 @@ transaction and no entered rate is shown as incomplete; for a review item's impa
 The difference between a reference rate used to estimate a figure and the transaction rate of a
 later payment is not recorded as a cost (example in 5.2).
 
+**Rounding.** A converted amount is rounded to the reporting currency's decimal places, halves
+away from zero: 9.235 becomes 9.24 and −9.235 becomes −9.24, so a full refund converted at the
+same reference rate as its purchase cancels it exactly. What is converted, and rounded, depends on
+the figure: in a figure on a date, such as net worth, credit utilisation or available credit, each
+account's balance in each currency; in a figure for a period, such as Spent in a category (5.13),
+each leg. A figure made of these, such as Spent in a group (`BUD-3`), adds them as rounded: three
+legs of USD 10.00 at a reference rate of 0.9235 convert to 9.24 each, and give 27.72.
+
+A reference rate is never rounded in a calculation; a conversion rounds only its result. Rounded
+to four decimal places, 18.40 ÷ 21.00 = 0.876190… would become 0.8762, and USD 10,000.00 would
+convert to 8,762.00 instead of 8,761.90: that error is what this rule forbids. A ratio, such as
+the savings rate (5.14), is never used rounded in another calculation. Ratios and reference rates
+are rounded only when displayed (`docs/experience.md`).
+
 ## 4. Financial structure
 
 ### 4.1 Institution
@@ -125,7 +139,6 @@ depends on which institution an account belongs to.
 | Class | Asset or liability. Derived from the kind |
 | Currencies | One or more. Each currency has its own balance |
 | Liquid | Whether its balance counts as money available at short notice. Set by the owner, required, except on a deferred-spending account (4.3) |
-| Capture method | How its transactions reach Trueup: notified, statement only, or manual. Used to show capture coverage. A deferred-spending account has none (4.3) |
 | Creation date | The date on which it was created in Trueup, set automatically; a deferred-spending account's is set as 4.3 states. Its opening balance is dated on it, and no transaction on it is dated earlier (`ACC-4`) |
 | Status | Active or closed. An account is closed only as `ACC-5` states (`docs/product.md`, 7.1 `financial-structure`). A closed account keeps its history |
 | Attention | Whether its transactions are highlighted in review even when recorded automatically |
@@ -189,7 +202,7 @@ negative balances, so net worth is the sum of all balances.
 | Deposit · severance fund · pension fund | Asset | A change in its balance that none of the owner's movements explains is income or spending in a category (`docs/product.md`, 7.1 `transactions`; example 19 in 5.2), never a revaluation (5.1) |
 | Transport card · membership · gift card | Asset | Prepaid balance. Topping it up is a transfer |
 | Property | Asset | Valued by hand: changes of value are revaluations (5.1), never income |
-| Deferred spending | Asset | Internal. Created by Trueup for a plan whose spending is recognised per instalment (5.6), and held in the plan's currency. Its creation date is the plan's purchase date or, for a plan already running when its card or loan was created, that account's creation date. Never liquid; the owner does not set its Liquid attribute. It has no capture method and is left out of capture coverage (5.14). Its opening balance is the plan's spending not yet recognised on its creation date: zero for a plan recorded with an originating transaction, whose purchase then brings the plan's amount, as in example 13a; for a plan already running — one whose debt is already in the opening balance of its card or loan, recorded with no originating transaction (4.2, 5.6) — the principal of the instalments in the plan's remaining schedule, such as +2,100.00 when 7 instalments of 300.00 of example 13b remain |
+| Deferred spending | Asset | Internal. Created by Trueup for a plan whose spending is recognised per instalment (5.6), and held in the plan's currency. Its creation date is the plan's purchase date or, for a plan already running when its card or loan was created, that account's creation date. Never liquid; the owner does not set its Liquid attribute. Its opening balance is the plan's spending not yet recognised on its creation date: zero for a plan recorded with an originating transaction, whose purchase then brings the plan's amount, as in example 13a; for a plan already running — one whose debt is already in the opening balance of its card or loan, recorded with no originating transaction (4.2, 5.6) — the principal of the instalments in the plan's remaining schedule, such as +2,100.00 when 7 instalments of 300.00 of example 13b remain |
 
 ### 4.4 Instruments and identifiers
 
@@ -275,6 +288,7 @@ A **transaction** has:
 | Transaction currency | The currency in which leg values are expressed |
 | Description | Text shown to the owner |
 | Status | Proposed, confirmed or void (5.4) |
+| Confirmed by | For a transaction that has been confirmed, what confirmed it: the owner, a classification rule in *auto* mode (5.10), which this attribute names, or the recognition mode of its plan (5.4) |
 | Extraordinary | Whether averages may exclude it |
 | Captured records | The records it was derived from, if any |
 | Plan instalment | The plan instalment it pays or, for a recognition (5.6), recognises, if any |
@@ -348,7 +362,7 @@ Subscriptions, and in its group's budget (5.13), counts that purchase as EUR 18.
 after example 6: the EUR 0.40 difference is not recorded as a cost.
 
 If the notification of example 6 gives only the amount debited, EUR 18.40, the USD 20.00 applied
-to the card is proposed from the card's statement (5.7).
+to the card is proposed from the amount due in full of the cycle being paid (5.7).
 
 ### 5.3 Kind of a transaction
 
@@ -440,26 +454,24 @@ spending −200.00 · Electronics +200.00, which counts in that month's budget (
 A credit card's credit limit, statement day and payment due date rule are account attributes
 (4.2).
 
-Each **cycle** ends on a statement date and has a payment due date. Both are computed from the
-card's attributes, and replaced by the statement's when that cycle's statement is recorded to
-reconcile it (5.8). For a cycle that no statement serves, the payment due date is replaced by the
-one the owner enters (below). For example, with statement day the 25th and a payment due date rule of 20 days
-after the statement date, the cycle that closes on 25 March has its payment due date on 14 April.
+Each **cycle** ends on a statement date and has a payment due date. The statement date is computed
+from the card's statement day, and replaced by the statement's date when that cycle's statement
+is recorded to reconcile it (5.8). The payment due date is computed from the card's payment due
+date rule and the cycle's statement date. For example, with statement day the 25th and a payment
+due date rule of 20 days after the statement date, the cycle that closes on 25 March has its
+payment due date on 14 April.
 
-Two cycles of a card are never reconciled (5.8), so no statement serves them: the cycle that
-closed before the card was created, when the card is created before that cycle's payment due
-date, and the cycle in which the card is created. For each, the owner enters by hand, as cycle
-data and with no statement, its payment due date and, per currency, its amount due in full and
-minimum payment; they replace the computed ones. For the cycle that closed before the card was
-created, she enters them when she creates the card.
+The cycles of a card start with the cycle in which it is created. When she creates a card, the
+owner enters its opening balance (4.2), its statement day and its payment due date rule, and no
+other cycle data: what the card owed before its creation, including the amount due of a cycle
+that closed before then, is in its opening balance.
 
 Per currency, a cycle has:
 
 | Cycle amount | Source |
 |---|---|
 | Total balance | The account balance, including the principal of instalments not yet billed |
-| Amount due in full | The total balance at the statement date, minus the principal of instalments not yet billed. Computed; replaced by the statement's when that cycle's statement is recorded to reconcile it (5.8), or by the amount the owner enters for a cycle that no statement serves |
-| Minimum payment | The statement, or entered by the owner. Unknown otherwise |
+| Amount due in full | The total balance at the statement date — the sum of the card's confirmed legs up to that date, opening balance included — minus the principal of instalments not yet billed. Always computed, for every cycle, including the cycle in which the card is created; never taken from a statement (5.8) |
 
 Credit utilisation of a card on a date = what the card owes — its total balances, negated — ÷ its
 credit limit. When the card's balances and its credit limit are not all in one currency, all of
@@ -468,9 +480,8 @@ defined in 5.14.
 
 **Paying a card's debt from an account in another currency.** The notification gives the amount
 debited, but may not give the amount applied to the card. Trueup then proposes the amount
-applied from the amount due in full in that currency of the cycle being paid: the one on the
-card's statement for that cycle, when that statement is recorded (5.8), or the one the owner
-entered for a cycle that no statement serves. The transaction stays proposed, as a review item
+applied from the amount due in full in that currency of the cycle being paid. The transaction
+stays proposed, as a review item
 with reason *Data the capture channel could not read or did not provide* (5.11), until the owner
 confirms the amount or corrects it: the payment may be partial or mistaken. Until that amount is
 known, the item waits, and the owner can supply the amount herself. The transaction gives a
@@ -478,11 +489,14 @@ reference rate only once it is confirmed (`MON-3`). Example 6 in 5.2 shows such 
 
 ### 5.8 Statements and reconciliation
 
-A **statement** belongs to an account and a period. It has a statement date and, per currency, a
-closing balance; on a credit card, also a payment due date and, per currency, the amount due in
-full and the minimum payment. A statement is recorded only to reconcile its period. When the
-owner uploads the statement file, Trueup extracts its **lines** (date, description, amount,
-currency) and keeps the file.
+A **statement** belongs to an account and a period. Trueup records only its statement date, its
+closing balance in each currency, which the owner enters when she reconciles, and its lines. Its
+statement date is the end of its period — on a credit card, the cycle's computed statement date
+(5.7) — unless the owner changes it. When the institution's statement also shows a payment due
+date, an amount due in full or a minimum payment, Trueup does not use them: a card's payment due
+date and amount due are always computed (5.7). A statement is recorded only to reconcile its
+period. When the owner uploads the statement file, Trueup extracts its **lines** (date,
+description, amount, currency) and keeps the file.
 
 A **reconciliation** compares, for one account and currency at the end of one period, the
 institution's balance — or, for cash, a count — with the recorded balance of confirmed
@@ -502,6 +516,12 @@ considered.
 | Equal | The period is reconciled |
 | Different | When the institution issues a statement, its lines are matched by amount, date and description with the account's whole record, including transactions in earlier, reconciled periods; a line that matches one of them is never missing from the record. A line with no match becomes a review item. A recorded transaction that the statement shows was recorded wrongly — a different amount, a duplicate, an operation that never took place — is changed or voided by the owner. A transaction the institution booked in the next period has its date changed by her so that it falls there. Every change keeps its history (`TX-6`) |
 | Different after review | The difference that remains, or the whole difference when there is no statement — as when cash is counted — is closed by an explicit transaction: a category she chooses, or an unexplained difference (`REC-3`; example 18 in 5.2). The period is then reconciled |
+
+A statement line for a plan instalment (5.6) is matched to that instalment and is never missing
+from the record. On a credit card it matches the instalment the cycle bills, whose principal has
+been on the card since the purchase. On a loan or mortgage it matches the transaction that pays it
+(5.1, Plan instalment). Interest, insurance or fees billed with it that no transaction records are
+missing from the record.
 
 On a credit card, the total balance is compared with the institution's total debt. If the
 institution reports only billed amounts, the principal of instalments not yet billed is excluded
@@ -576,6 +596,9 @@ A **classification rule** resolves category, counterparty and description:
 A captured record that no rule matches becomes a review item. No category is ever assigned by
 default (`CLS-2`).
 
+Classification rules have no versions. A transaction confirmed by a classification rule (5.1,
+"Confirmed by") shows that rule as it is now or, once the rule is deleted, that it was deleted.
+
 ### 5.11 Review items
 
 A review item has: its **reason**, the captured record or proposed transaction it concerns, its
@@ -615,8 +638,10 @@ owner marks as skipped is no longer flagged as missing.
 ### 5.13 Budgets
 
 A **budget** is a monthly amount, in the reporting currency (3), for one expense category group
-(`BUD-1`). It can have a standing amount and per-month overrides. Income category groups have no
-budget.
+(`BUD-1`). It has standing amounts and per-month overrides. A standing amount applies from the
+month the owner chooses until the next standing amount she sets takes effect. Earlier standing
+amounts are kept, so a change never alters the budget of a month before the one she chooses.
+Income category groups have no budget.
 
 | Figure | Definition |
 |---|---|
@@ -645,11 +670,10 @@ Proposed legs in the group's categories are not part of Spent; they are shown ap
 | Fixed costs ÷ income | Spending in categories with cost behaviour *fixed* ÷ income |
 | Debt service ÷ income | Payments to loans and mortgages in the period, principal and costs together ÷ income. Costs are the legs of those payments in categories with financial cost *yes* |
 | Months of essential spending covered | Balances of liquid accounts ÷ average monthly spending in *essential* categories over the last three complete months |
-| Capture coverage | Per account, except a deferred-spending account (4.3), from its capture method and the state of its reconciliations; for an account that is never reconciled (5.8), from its capture method alone |
 | Open difference | Per account subject to reconciliation (5.8) and per currency, for a period, from the first that begins after the account's creation, whose institution's balance or count is recorded but whose reconciliation is not complete: the recorded balance at the end of the period minus that balance, compared as 5.8 states: on a credit card whose institution reports only billed amounts, the recorded balance leaves out the principal of instalments not yet billed. For example, a recorded −1,100.00 that includes 300.00 of such principal, against a reported −800.00, is an open difference of 0.00 |
 
-Every figure carries its completeness: incomplete period, unreconciled accounts, accounts with
-incomplete capture, pending items, missing reference rates (`IND-2`). A period is incomplete
+Every figure carries its completeness: incomplete period, unreconciled accounts, pending items,
+missing reference rates (`IND-2`). A period is incomplete
 while it has not ended, and when it began before the creation date of the workspace's first
 account, because the record starts on that date (`docs/product.md`, 7). A figure that averages
 months, such as months of essential spending covered or a 3-month average, is incomplete while
@@ -716,7 +740,7 @@ can be unreconciled is stated in `docs/product.md`, 6, principle 4.
 | Review reasons | Classification rules, their order and mode |
 | Recognition modes | Plans, schedules and their versions |
 | Reconciliation periods, their order, outcomes, and what a reconciled period prevents (`REC-1`, `REC-4`, `REC-5`) | Expectations, budgets |
-| Indicator definitions (5.7, 5.13, 5.14) | Liquidity, capture method and attention per account |
+| Indicator definitions (5.7, 5.13, 5.14) | Liquidity and attention per account |
 | Completeness flags | Exclusions for averages; extraordinary transactions |
 | How reference rates are derived (3) | |
 

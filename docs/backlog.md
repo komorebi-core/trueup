@@ -6,26 +6,6 @@ the same change.
 
 An item marked **Open** needs the owner's answer. It is never resolved by assumption.
 
-## For `domain.md`
-
-- **B-52** — **Open.** In 5.7, the owner enters by hand, as cycle data and with no statement, the
-  payment due date and, per currency, the amount due in full and the minimum payment of each card
-  cycle that no statement serves. When she enters them for the cycle in which the card is created
-  is undecided: that cycle's amount due in full and minimum payment do not exist yet when the card
-  is created. Options: (a) once that cycle closes, before its payment due date; until then the
-  computed amount due in full applies and the minimum payment is unknown; or (b) when she creates
-  the card, as estimates.
-
-## For `quality-attributes.md`
-
-- **B-8** — Data freshness: a transaction written to the staging sheet is visible in Trueup
-  within 24 hours.
-- **B-9** — Tenant readiness: adding a second workspace requires no schema redesign and no
-  change to existing data.
-- **B-10** — Demo isolation: if a demo instance exists, it never has access to real data, not
-  even read access.
-- **B-11** — **Open.** The monthly cost ceiling for running Trueup.
-
 ## For `experience.md`
 
 - **B-12** — **Open.** The language of the user interface.
@@ -36,6 +16,9 @@ An item marked **Open** needs the owner's answer. It is never resolved by assump
 - **B-15** — A converted amount states each reference rate it used, with its date or the mark
   that the owner entered it. A transaction is always shown in its own currency, optionally with
   an approximate converted amount beside it.
+- **B-73** — A reference rate is displayed rounded to five decimal places. The amounts of the
+  transaction it comes from are not shown next to it. Calculations use the rate exact
+  (`docs/domain.md`, 3, "Rounding"; `docs/quality-attributes.md`, AUD-1).
 - **B-16** — Review lists every transaction captured since the last review: first the items that
   need a decision, then those recorded automatically, with transactions on accounts marked for
   attention highlighted and changeable in one action.
@@ -69,9 +52,9 @@ An item marked **Open** needs the owner's answer. It is never resolved by assump
 - **B-21** — Every external dependency — reading the staging sheet, extracting statement lines,
   hosting, database, authentication — is tested end to end, writes included, before any
   specification depends on it. The evidence goes in the ADR.
-- **B-22** — Statement extraction depends on each institution's statement format. Each format is
-  validated by the owner against a real statement on her own machine; real statements are never
-  committed.
+- **B-22** — The reader of statement files, whose single format B-72 sets, is validated by the
+  owner against a real statement file of hers, in a development environment on her own machine
+  (`docs/quality-attributes.md`, SEC-7); real statement files are never committed.
 
 ## For `roadmap.md`
 
@@ -82,9 +65,8 @@ An item marked **Open** needs the owner's answer. It is never resolved by assump
   whose opening balance is the mortgage's outstanding principal on the property's creation date;
   each plan already running — loan, mortgage, or instalment plan on a card or with another
   lender — with its remaining schedule and, when it recognises its spending per instalment, its
-  expense category (`docs/domain.md`, 4.2 and 5.6); for a credit card created between a
-  statement date and its payment due date, that cycle's payment due date, amount due in full and
-  minimum payment, entered by hand with no statement (`docs/domain.md`, 5.7).
+  expense category (`docs/domain.md`, 4.2 and 5.6); for every credit card, its statement day and
+  payment due date rule, and no other cycle data (`docs/domain.md`, 5.7).
 - **B-25** — The spreadsheet remains the system of record until Trueup replaces it. There is no
   period without a system.
 - **B-26** — Trueup is deployed from the first increment, so that technical decisions are tested
@@ -98,6 +80,17 @@ An item marked **Open** needs the owner's answer. It is never resolved by assump
   5.9, and `CAP-5` instead of restating the rule, including how a row with no operation date
   (column J empty) is dated. Recognising these rows never writes to the sheet, which stays
   read-only (`docs/product.md`, 7.5).
+
+## For `reference/statement-file.md` (written once the owner has generated the file)
+
+- **B-72** — Every statement file the owner uploads, from any institution, is an Excel file in a
+  single format, which she generates herself from the institution's statement; an institution's
+  own statement format is not Trueup's concern (`docs/quality-attributes.md`, MOD-13; B-22). The
+  file carries only lines, one per line of the statement: each transaction line the statement
+  has, and each plan instalment (`docs/domain.md`, 5.6) that the statement bills or shows paid
+  (`docs/domain.md`, 5.8). It carries no closing balance, which the owner enters by hand when she
+  reconciles, and no other data of the statement: a payment due date, an amount due in full or a
+  minimum payment on the institution's statement is ignored (`docs/domain.md`, 5.8).
 
 ## For `reference/spreadsheet-import.md`
 
