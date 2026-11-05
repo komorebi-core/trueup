@@ -1,0 +1,54 @@
+{
+  "geometry": {
+    "viewBox": [
+      0,
+      0,
+      32,
+      32
+    ],
+    "inkBounds": [
+      2,
+      2,
+      30,
+      30
+    ],
+    "minimumChannel": 4,
+    "minimumStroke": 8,
+    "at16px": {
+      "channel": 2,
+      "stroke": 4,
+      "activeSilhouette": 14
+    }
+  },
+  "app": {
+    "canvas": [
+      1024,
+      1024
+    ],
+    "safeCircle": {
+      "cx": 512,
+      "cy": 512,
+      "radius": 409.6
+    },
+    "symbolBounds": [
+      246,
+      246,
+      778,
+      778
+    ],
+    "maxCornerRadius": 376.181,
+    "radialMargin": 33.419
+  },
+  "contrast": {
+    "raspberryOnWhite": 4.71,
+    "raspberryOnBlack": 4.01,
+    "blackOnWhite": 18.88
+  },
+  "font": "Rubik Regular; outlines generated from the locally available font. No font dependency in logo SVGs.",
+  "palette": {
+    "principal": "#D82E5A",
+    "secundario": "#111111",
+    "inverso": "#FFFFFF"
+  },
+  "change": "Solo colores; geometría, proporciones, contornos del nombre y espacio entre símbolo y nombre conservados respecto de Calce original."
+}
