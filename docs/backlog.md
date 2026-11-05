@@ -33,6 +33,14 @@ An item marked **Open** needs the owner's answer. It is never resolved by assump
   inside Trueup, or with the tools of the services that hold the backups; and whether Trueup lists
   its backups to her. Whichever way, the first time she opens Trueup after a restore, it states the
   moment of the backup the workspace returned to (`docs/experience.md`, 4.8 and 6.3).
+- **B-75** — The decision record on the hosting service meets `docs/adr/0001-single-origin.md`,
+  sections 3 and 4. Its end-to-end test (B-21) shows that, from Safari on a phone, the web
+  interface loads from the host the service assigns, and that a cookie set by a response of the
+  API is kept and sent back on the next call under `/api/`. It measures the wait after a pause of
+  the service against `docs/quality-attributes.md`, PHN-1.
+- **B-76** — The decision record on signing in and sessions has the browser carry the session as
+  `docs/adr/0001-single-origin.md`, section 3, states, and decides everything else about the
+  session within that rule.
 
 ## For `roadmap.md`
 
